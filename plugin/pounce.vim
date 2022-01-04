@@ -1,6 +1,6 @@
-highlight PounceSelectedMatchHit gui=reverse guifg=#385f38 guibg=#f8f893
-highlight PounceSelectedMatchMiss gui=reverse guifg=#384f38 guibg=#f8c893
-highlight PounceUnselectedMatchHit gui=reverse guifg=#a85f38 guibg=#f8f893
-highlight PounceUnselectedMatchMiss gui=reverse guifg=#784f38 guibg=#f8c893
+highlight PounceSelectedMatchHit cterm=bold ctermfg=black ctermbg=green gui=bold guifg=#555555 guibg=#11dd11
+highlight PounceSelectedMatchMiss cterm=bold ctermfg=black ctermbg=darkgreen gui=bold guifg=#555555 guibg=#00aa00
+highlight PounceUnselectedMatchHit ctermfg=black ctermbg=red guifg=#d8d873 guibg=#a85f38
+highlight PounceUnselectedMatchMiss ctermfg=black ctermbg=darkred guifg=#d8a873 guibg=#784f38
 
 command! Pounce :lua require('pounce').pounce()

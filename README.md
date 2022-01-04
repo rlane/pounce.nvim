@@ -3,7 +3,7 @@
 Pounce is a motion plugin similar to EasyMotion, Hop, Lightspeed, and
 more. It's based on incremental fuzzy search. Here's a demo:
 
-[![asciicast](https://asciinema.org/a/CgYRR7BIDcFemgNMPbGEqsPER.svg)](https://asciinema.org/a/CgYRR7BIDcFemgNMPbGEqsPER)
+[![asciicast](https://asciinema.org/a/Ng3bpcpIb2sK3gfHeglSGhnbX.svg)](https://asciinema.org/a/Ng3bpcpIb2sK3gfHeglSGhnbX)
 
 ## Installation
 
