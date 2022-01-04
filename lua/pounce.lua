@@ -1,4 +1,4 @@
-local fzy = require('fzy_lua')
+local fzy = require('pounce_fzy_lua')
 local vim = vim
 
 local M = {}
