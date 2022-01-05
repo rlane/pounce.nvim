@@ -1,9 +1,15 @@
 # pounce.nvim
 
-Pounce is a motion plugin similar to EasyMotion, Hop, Lightspeed, and
-more. It's based on incremental fuzzy search. Here's a demo:
+Pounce is a motion plugin similar to [EasyMotion][1], [Sneak][2], [Hop][3],
+[Lightspeed][4], and more. It's based on incremental fuzzy search. Here's a
+demo:
 
 [![asciicast](https://asciinema.org/a/XPeOoohPKqlazq879FMX07Hl3.svg)](https://asciinema.org/a/XPeOoohPKqlazq879FMX07Hl3)
+
+[1]: https://github.com/easymotion/vim-easymotion
+[2]: https://github.com/justinmk/vim-sneak
+[3]: https://github.com/phaazon/hop.nvim
+[4]: https://github.com/ggandor/lightspeed.nvim
 
 ## Installation
 
