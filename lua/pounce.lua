@@ -2,6 +2,7 @@ local fzy = require('pounce_fzy_lua')
 local vim = vim
 
 local M = {}
+M.debug = false
 
 function M.pounce()
   local win = vim.api.nvim_get_current_win()
@@ -48,26 +49,39 @@ function M.pounce()
 
     if input ~= nil then
       local hits = {}
+      local best_score = 0
       for line=win_info.topline,win_info.botline do
         local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1]
         if fzy.has_match(input, text, false) then
           local indices, score = fzy.positions(input, text, false)
           if #indices > 0 then
             table.insert(hits, {line=line, indices=indices, score=score})
+            if M.debug then
+              vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, {virt_text={{tostring(score), "IncSearch"}}})
+            end
+            best_score = math.max(best_score, score)
           end
         end
       end
 
-      if #hits > 0 then
+      local filtered_hits = {}
+      for _, hit in ipairs(hits) do
+        if hit.score > best_score / 2 then
+          table.insert(filtered_hits, hit)
+        end
+      end
+
+      if #filtered_hits > 0 then
         local bestidx = nil
-        for idx, hit in ipairs(hits) do
-          if bestidx == nil or hit.score > hits[bestidx].score then
+        for idx, hit in ipairs(filtered_hits) do
+          if hit.score == best_score then
             bestidx = idx
+            break
           end
         end
-        local selectedidx = 1 + (bestidx + offset - 1) % #hits
+        local selectedidx = 1 + (bestidx + offset - 1) % #filtered_hits
 
-        for idx, hit in ipairs(hits) do
+        for idx, hit in ipairs(filtered_hits) do
           local hit_highlight = "PounceUnselectedMatchHit"
           local miss_highlight = "PounceUnselectedMatchMiss"
           if idx == selectedidx then
