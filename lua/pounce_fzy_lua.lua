@@ -21,8 +21,6 @@
 -- THE SOFTWARE.
 
 -- The scoring function is modified from the original.
-local SCORE_GAP_LEADING = 0.0
-local SCORE_GAP_TRAILING = 0.0
 local SCORE_GAP_INNER = -0.1
 local SCORE_MATCH_CONSECUTIVE = 1.0
 local SCORE_MATCH_SLASH = 0.9
@@ -122,14 +120,14 @@ local function compute(needle, haystack, D, M, case_sensitive)
     M[i] = {}
 
     local prev_score = SCORE_MIN
-    local gap_score = i == n and SCORE_GAP_TRAILING or SCORE_GAP_INNER
+    local gap_score = i < n and SCORE_GAP_INNER or 0
     local needle_char = needle:sub(i, i)
 
     for j = 1, m do
       if needle_char == haystack_chars[j] then
         local score = SCORE_MIN
         if i == 1 then
-          score = ((j - 1) * SCORE_GAP_LEADING) + match_bonus[j]
+          score = match_bonus[j]
         elseif j > 1 then
           local a = M[i - 1][j - 1] + match_bonus[j]
           local b = D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE
