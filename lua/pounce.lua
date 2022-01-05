@@ -23,6 +23,7 @@ function M.pounce()
 
     if nr == 13 then  -- enter
       if bestpos then
+        vim.cmd("normal! m'")
         vim.api.nvim_win_set_cursor(win, bestpos)
       end
       break
