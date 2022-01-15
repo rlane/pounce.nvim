@@ -34,8 +34,8 @@ function M.pounce()
     elseif nr == "\x80kb" then  -- backspace
       input = input:sub(1, -2)
       available_accept_keys = {}
-      for i = 1, #accept_keys do
-        table.insert(available_accept_keys, accept_keys:sub(i, i))
+      for i = 1, #M.accept_keys do
+        table.insert(available_accept_keys, M.accept_keys:sub(i, i))
       end
       position_to_accept_key = {}
       accept_key_to_position = {}
@@ -85,7 +85,7 @@ function M.pounce()
             vim.api.nvim_buf_add_highlight(buf, ns, "PounceMatch", hit.line - 1, index - 1, index)
           end
 
-          if #hits <= accept_keys:len() then
+          if #hits <= M.accept_keys:len() then
             local serialized_position = string.format("%d,%d", hit.line, hit.indices[1] - 1)
             local accept_key = position_to_accept_key[serialized_position]
             if accept_key == nil and #available_accept_keys > 0 then
