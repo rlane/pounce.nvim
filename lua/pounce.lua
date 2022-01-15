@@ -25,11 +25,12 @@ local function match(needle_, haystack_)
 
       for i, v in ipairs(indices) do
         indices[i] = v + offset
+        assert(indices[i] <= haystack_:len())
       end
       table.insert(results, {indices=indices, score=score})
 
-      match_inner(needle, right_haystack, offset + indices[#indices])
-      return match_inner(needle, left_haystack, offset)
+      match_inner(needle, left_haystack, offset)
+      return match_inner(needle, right_haystack, indices[#indices])
     end
   end
 
