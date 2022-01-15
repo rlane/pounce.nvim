@@ -3,6 +3,7 @@ local vim = vim
 
 local M = {}
 M.debug = false
+local accept_keys = "FJGHDKSLARVUMTBIECWXOPQZ"
 
 function M.pounce()
   local win = vim.api.nvim_get_current_win()
@@ -13,6 +14,14 @@ function M.pounce()
   local input = ""
   local bestpos = nil
   local offset = 0
+
+  local available_accept_keys = {}
+  for i = 1, #accept_keys do
+    table.insert(available_accept_keys, accept_keys:sub(i, i))
+  end
+
+  local position_to_accept_key = {}
+  local accept_key_to_position = {}
 
   while true do
     vim.api.nvim_echo({ {'pounce> ', 'Keyword'}, {input} }, false, {})
@@ -33,12 +42,22 @@ function M.pounce()
     elseif nr == "\x80kb" then  -- backspace
       input = input:sub(1, -2)
       offset = 0
+      available_accept_keys = {}
+      for i = 1, #accept_keys do
+        table.insert(available_accept_keys, accept_keys:sub(i, i))
+      end
+      position_to_accept_key = {}
+      accept_key_to_position = {}
     elseif nr == 10 then  -- <C-j>
       offset = offset + 1
     elseif nr == 11 then  -- <C-k>
       offset = offset - 1
     elseif nr < 32 or nr == 127 then
       -- ignore
+    elseif accept_key_to_position[vim.fn.nr2char(nr)] ~= nil then
+      vim.cmd("normal! m'")
+      vim.api.nvim_win_set_cursor(win, accept_key_to_position[vim.fn.nr2char(nr)])
+      break
     else
       local ch = vim.fn.nr2char(nr)
       input = input .. ch
@@ -71,6 +90,8 @@ function M.pounce()
         end
       end
 
+      table.sort(filtered_hits, function(a, b) return a.score > b.score end)
+
       if #filtered_hits > 0 then
         local bestidx = nil
         for idx, hit in ipairs(filtered_hits) do
@@ -93,6 +114,21 @@ function M.pounce()
           vim.api.nvim_buf_add_highlight(buf, ns, miss_highlight, hit.line - 1, hit.indices[1] - 1, hit.indices[#hit.indices] - 1)
           for _, index in ipairs(hit.indices) do
             vim.api.nvim_buf_add_highlight(buf, ns, hit_highlight, hit.line - 1, index - 1, index)
+          end
+
+          if #hits <= accept_keys:len() then
+            local serialized_position = string.format("%d,%d", hit.line, hit.indices[1] - 1)
+            local accept_key = position_to_accept_key[serialized_position]
+            if accept_key == nil and #available_accept_keys > 0 then
+              accept_key = table.remove(available_accept_keys, 1)
+              position_to_accept_key[serialized_position] = accept_key
+              accept_key_to_position[accept_key] = {hit.line, hit.indices[1] - 1}
+            end
+
+            if accept_key ~= nil then
+              vim.api.nvim_buf_set_extmark(buf, ns, hit.line - 1, hit.indices[1] - 1,
+                {virt_text={{accept_key, "PounceAccept"}}, virt_text_pos="overlay"})
+            end
           end
         end
       end
