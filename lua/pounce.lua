@@ -5,6 +5,31 @@ local M = {}
 M.debug = false
 M.accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ"
 
+local function match(needle_, haystack_)
+  local match_inner = nil
+  local results = {}
+  match_inner = function(needle, haystack, offset)
+    if fzy.has_match(needle, haystack, false) then
+      local indices, score = fzy.positions(needle, haystack, false)
+      local left_haystack = string.sub(haystack, 1, indices[1] - 1)
+      local right_haystack = string.sub(haystack, indices[#indices] + 1, -1)
+      assert(left_haystack:len() < haystack:len())
+      assert(right_haystack:len() < haystack:len())
+
+      for i, v in ipairs(indices) do
+        indices[i] = v + offset
+      end
+      table.insert(results, {indices=indices, score=score})
+
+      match_inner(needle, right_haystack, offset + indices[#indices])
+      return match_inner(needle, left_haystack, offset)
+    end
+  end
+
+  match_inner(needle_, haystack_, 0)
+  return results
+end
+
 function M.pounce()
   local win = vim.api.nvim_get_current_win()
   local buf = vim.api.nvim_win_get_buf(win)
@@ -47,8 +72,10 @@ function M.pounce()
       local best_score = 0
       for line=win_info.topline,win_info.botline do
         local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1]
-        if fzy.has_match(input, text, false) then
-          local indices, score = fzy.positions(input, text, false)
+        local matches = match(input, text)
+        for _, m in ipairs(matches) do
+          local score = m.score
+          local indices = m.indices
           if #indices > 0 then
             table.insert(hits, {line=line, indices=indices, score=score})
             if M.debug then
