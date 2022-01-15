@@ -8,6 +8,7 @@ M.accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ"
 
 local MAX_MATCHES_PER_LINE = 10
 
+-- Returns the most relevant non-overlapping matches on a line.
 local function match(needle_, haystack_)
   local match_inner = nil
   local results = {}
@@ -45,7 +46,6 @@ function M.pounce()
   local ns = vim.api.nvim_create_namespace("")
 
   local input = ""
-
   local accept_key_to_position = {}
 
   while true do
@@ -56,26 +56,29 @@ function M.pounce()
       break
     end
 
+    local start_clock = os.clock()
+
     if nr == 27 then  -- escape
       break
     elseif nr == "\x80kb" then  -- backspace
       input = input:sub(1, -2)
     elseif type(nr) == "number" and (nr < 32 or nr == 127) then
       -- ignore
-    elseif accept_key_to_position[vim.fn.nr2char(nr)] ~= nil then
-      vim.cmd("normal! m'")
-      vim.api.nvim_win_set_cursor(win, accept_key_to_position[vim.fn.nr2char(nr)])
-      break
     else
       local ch = vim.fn.nr2char(nr)
+      local accepted = accept_key_to_position[ch]
+      if accepted ~= nil then
+        -- accept match
+        vim.cmd("normal! m'")
+        vim.api.nvim_win_set_cursor(win, accepted)
+        break
+      end
       input = input .. ch
     end
 
-    local start_clock = os.clock()
+    accept_key_to_position = {}
 
     vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-
-    accept_key_to_position = {}
 
     if input ~= "" then
       local hits = {}
@@ -84,15 +87,11 @@ function M.pounce()
         local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1]
         local matches = match(input, text)
         for _, m in ipairs(matches) do
-          local score = m.score
-          local indices = m.indices
-          if #indices > 0 then
-            table.insert(hits, {line=line, indices=indices, score=score})
-            if M.debug then
-              vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, {virt_text={{tostring(score), "IncSearch"}}})
-            end
-            best_score = math.max(best_score, score)
+          table.insert(hits, {line=line, indices=m.indices, score=m.score})
+          if M.debug then
+            vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, {virt_text={{tostring(m.score), "IncSearch"}}})
           end
+          best_score = math.max(best_score, m.score)
         end
       end
 
@@ -105,19 +104,17 @@ function M.pounce()
 
       table.sort(filtered_hits, function(a, b) return a.score > b.score end)
 
-      if #filtered_hits > 0 then
-        for idx, hit in ipairs(filtered_hits) do
-          vim.api.nvim_buf_add_highlight(buf, ns, "PounceGap", hit.line - 1, hit.indices[1] - 1, hit.indices[#hit.indices] - 1)
-          for _, index in ipairs(hit.indices) do
-            vim.api.nvim_buf_add_highlight(buf, ns, "PounceMatch", hit.line - 1, index - 1, index)
-          end
+      for idx, hit in ipairs(filtered_hits) do
+        vim.api.nvim_buf_add_highlight(buf, ns, "PounceGap", hit.line - 1, hit.indices[1] - 1, hit.indices[#hit.indices] - 1)
+        for _, index in ipairs(hit.indices) do
+          vim.api.nvim_buf_add_highlight(buf, ns, "PounceMatch", hit.line - 1, index - 1, index)
+        end
 
-          if idx <= M.accept_keys:len() then
-            local accept_key = M.accept_keys:sub(idx, idx)
-            accept_key_to_position[accept_key] = {hit.line, hit.indices[1] - 1}
-            vim.api.nvim_buf_set_extmark(buf, ns, hit.line - 1, hit.indices[1] - 1,
-              {virt_text={{accept_key, "PounceAccept"}}, virt_text_pos="overlay"})
-          end
+        if idx <= M.accept_keys:len() then
+          local accept_key = M.accept_keys:sub(idx, idx)
+          accept_key_to_position[accept_key] = {hit.line, hit.indices[1] - 1}
+          vim.api.nvim_buf_set_extmark(buf, ns, hit.line - 1, hit.indices[1] - 1,
+            {virt_text={{accept_key, "PounceAccept"}}, virt_text_pos="overlay"})
         end
       end
     end
