@@ -67,7 +67,7 @@ function M.pounce()
 
     accept_key_to_position = {}
 
-    if input ~= nil then
+    if input ~= "" then
       local hits = {}
       local best_score = 0
       for line=win_info.topline,win_info.botline do
