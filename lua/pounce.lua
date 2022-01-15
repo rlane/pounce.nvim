@@ -1,4 +1,5 @@
 local fzy = require('pounce_fzy_lua')
+local log = require('log')
 local vim = vim
 
 local M = {}
@@ -63,6 +64,8 @@ function M.pounce()
       input = input .. ch
     end
 
+    local start_clock = os.clock()
+
     vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
 
     accept_key_to_position = {}
@@ -111,6 +114,9 @@ function M.pounce()
         end
       end
     end
+
+    local elapsed = os.clock() - start_clock
+    log.debug("Matching took " .. elapsed * 1000 .. "ms")
   end
 
   vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
