@@ -3,7 +3,7 @@ local vim = vim
 
 local M = {}
 M.debug = false
-local accept_keys = "FJGHDKSLARVUMTBIECWXOPQZ"
+M.accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ"
 
 function M.pounce()
   local win = vim.api.nvim_get_current_win()
@@ -14,8 +14,8 @@ function M.pounce()
   local input = ""
 
   local available_accept_keys = {}
-  for i = 1, #accept_keys do
-    table.insert(available_accept_keys, accept_keys:sub(i, i))
+  for i = 1, #M.accept_keys do
+    table.insert(available_accept_keys, M.accept_keys:sub(i, i))
   end
 
   local position_to_accept_key = {}
