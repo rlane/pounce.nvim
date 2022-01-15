@@ -6,10 +6,16 @@ local M = {}
 M.debug = false
 M.accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ"
 
+local MAX_MATCHES_PER_LINE = 10
+
 local function match(needle_, haystack_)
   local match_inner = nil
   local results = {}
   match_inner = function(needle, haystack, offset)
+    if #results >= MAX_MATCHES_PER_LINE then
+      return
+    end
+
     if fzy.has_match(needle, haystack, false) then
       local indices, score = fzy.positions(needle, haystack, false)
       local left_haystack = string.sub(haystack, 1, indices[1] - 1)
