@@ -60,7 +60,7 @@ function M.pounce()
       break
     elseif nr == "\x80kb" then  -- backspace
       input = input:sub(1, -2)
-    elseif nr < 32 or nr == 127 then
+    elseif type(nr) == "number" and (nr < 32 or nr == 127) then
       -- ignore
     elseif accept_key_to_position[vim.fn.nr2char(nr)] ~= nil then
       vim.cmd("normal! m'")
