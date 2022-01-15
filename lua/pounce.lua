@@ -12,8 +12,6 @@ function M.pounce()
   local ns = vim.api.nvim_create_namespace("")
 
   local input = ""
-  local bestpos = nil
-  local offset = 0
 
   local available_accept_keys = {}
   for i = 1, #accept_keys do
@@ -31,27 +29,16 @@ function M.pounce()
       break
     end
 
-    if nr == 13 then  -- enter
-      if bestpos then
-        vim.cmd("normal! m'")
-        vim.api.nvim_win_set_cursor(win, bestpos)
-      end
-      break
-    elseif nr == 27 then  -- escape
+    if nr == 27 then  -- escape
       break
     elseif nr == "\x80kb" then  -- backspace
       input = input:sub(1, -2)
-      offset = 0
       available_accept_keys = {}
       for i = 1, #accept_keys do
         table.insert(available_accept_keys, accept_keys:sub(i, i))
       end
       position_to_accept_key = {}
       accept_key_to_position = {}
-    elseif nr == 10 then  -- <C-j>
-      offset = offset + 1
-    elseif nr == 11 then  -- <C-k>
-      offset = offset - 1
     elseif nr < 32 or nr == 127 then
       -- ignore
     elseif accept_key_to_position[vim.fn.nr2char(nr)] ~= nil then
@@ -61,7 +48,6 @@ function M.pounce()
     else
       local ch = vim.fn.nr2char(nr)
       input = input .. ch
-      offset = 0
     end
 
     vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
@@ -93,27 +79,10 @@ function M.pounce()
       table.sort(filtered_hits, function(a, b) return a.score > b.score end)
 
       if #filtered_hits > 0 then
-        local bestidx = nil
-        for idx, hit in ipairs(filtered_hits) do
-          if hit.score == best_score then
-            bestidx = idx
-            break
-          end
-        end
-        local selectedidx = 1 + (bestidx + offset - 1) % #filtered_hits
-
-        for idx, hit in ipairs(filtered_hits) do
-          local hit_highlight = "PounceUnselectedMatchHit"
-          local miss_highlight = "PounceUnselectedMatchMiss"
-          if idx == selectedidx then
-            hit_highlight = "PounceSelectedMatchHit"
-            miss_highlight = "PounceSelectedMatchMiss"
-            bestpos = {hit.line, hit.indices[1] - 1}
-          end
-
-          vim.api.nvim_buf_add_highlight(buf, ns, miss_highlight, hit.line - 1, hit.indices[1] - 1, hit.indices[#hit.indices] - 1)
+        for _, hit in ipairs(filtered_hits) do
+          vim.api.nvim_buf_add_highlight(buf, ns, "PounceGap", hit.line - 1, hit.indices[1] - 1, hit.indices[#hit.indices] - 1)
           for _, index in ipairs(hit.indices) do
-            vim.api.nvim_buf_add_highlight(buf, ns, hit_highlight, hit.line - 1, index - 1, index)
+            vim.api.nvim_buf_add_highlight(buf, ns, "PounceMatch", hit.line - 1, index - 1, index)
           end
 
           if #hits <= accept_keys:len() then
