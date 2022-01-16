@@ -1,10 +1,12 @@
 # pounce.nvim
 
-Pounce is a motion plugin similar to [EasyMotion][1], [Sneak][2], [Hop][3],
-[Lightspeed][4], and more. It's based on incremental fuzzy search. Here's a
-demo:
+Pounce is a motion plugin similar to [EasyMotion][1], [Sneak][2], [Hop][3], and
+[Lightspeed][4]. It's based on incremental fuzzy search. Here's a demo:
 
 [![asciicast](https://asciinema.org/a/Mu6MA8FGD9V86OheA50gG2cmL.svg)](https://asciinema.org/a/Mu6MA8FGD9V86OheA50gG2cmL)
+
+The demo shows searching for the word "ht\_mask" by typing "htm" and then "F"
+to select a match.
 
 [1]: https://github.com/easymotion/vim-easymotion
 [2]: https://github.com/justinmk/vim-sneak
@@ -35,7 +37,7 @@ nmap s <cmd>Pounce<CR>
 vmap s <cmd>Pounce<CR>
 ```
 
-Configuration is done with the `setup` method. The defaults:
+Configuration is done with the `setup` function. The defaults:
 
 ```lua
 require'pounce'.setup{
