@@ -26,7 +26,6 @@ local SCORE_MATCH_CONSECUTIVE = 1.0
 local SCORE_MATCH_SLASH = 0.9
 local SCORE_MATCH_WORD = 0.8
 local SCORE_MATCH_CAPITAL = 0.7
-local SCORE_MAX = math.huge
 local SCORE_MIN = -math.huge
 local MATCH_MAX_LENGTH = 1024
 
@@ -162,8 +161,6 @@ function fzy.score(needle, haystack, case_sensitive)
 
   if n == 0 or m == 0 or m > MATCH_MAX_LENGTH or n > m then
     return SCORE_MIN
-  elseif n == m then
-    return SCORE_MAX
   else
     local D = {}
     local M = {}
@@ -193,12 +190,6 @@ function fzy.positions(needle, haystack, case_sensitive)
 
   if n == 0 or m == 0 or m > MATCH_MAX_LENGTH or n > m then
     return {}, SCORE_MIN
-  elseif n == m then
-    local consecutive = {}
-    for i = 1, n do
-      consecutive[i] = i
-    end
-    return consecutive, SCORE_MAX
   end
 
   local D = {}
@@ -259,11 +250,6 @@ end
 -- sentinel. This is the lowest possible score.
 function fzy.get_score_min()
   return SCORE_MIN
-end
-
--- The score returned for exact matches. This is the highest possible score.
-function fzy.get_score_max()
-  return SCORE_MAX
 end
 
 -- The maximum size for which `fzy` will evaluate scores.
