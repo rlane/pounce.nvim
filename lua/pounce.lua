@@ -8,7 +8,7 @@ local M = {
   config = {
     accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ",
     debug = false,
-  }
+  },
 }
 
 function M.setup(config)
