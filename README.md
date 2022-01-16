@@ -32,9 +32,10 @@ cancels the motion and leaves the cursor at its previous position.
 
 No mappings are created by default. Here's a suggestion:
 
-```
+```vim
 nmap s <cmd>Pounce<CR>
 vmap s <cmd>Pounce<CR>
+omap gs <cmd>Pounce<CR>  " 's' is used by vim-surround
 ```
 
 Configuration is done with the `setup` function. The defaults:
