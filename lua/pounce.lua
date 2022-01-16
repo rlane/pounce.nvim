@@ -3,6 +3,7 @@ local log = require "log"
 local vim = vim
 
 local MAX_MATCHES_PER_LINE = 10
+local CURRENT_LINE_BONUS = 5
 
 local M = {
   config = {
@@ -53,6 +54,7 @@ function M.pounce()
   local buf = vim.api.nvim_win_get_buf(win)
   local win_info = vim.fn.getwininfo(win)[1]
   local ns = vim.api.nvim_create_namespace ""
+  local cursor_line = vim.api.nvim_win_get_cursor(win)[1]
 
   local input = ""
   local accept_key_to_position = {}
@@ -96,11 +98,15 @@ function M.pounce()
         local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1]
         local matches = match(input, text)
         for _, m in ipairs(matches) do
-          table.insert(hits, { line = line, indices = m.indices, score = m.score })
-          if M.config.debug then
-            vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(m.score), "IncSearch" } } })
+          local score = m.score
+          if line == cursor_line then
+            score = score + CURRENT_LINE_BONUS
           end
-          best_score = math.max(best_score, m.score)
+          table.insert(hits, { line = line, indices = m.indices, score = score })
+          if M.config.debug then
+            vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(score), "IncSearch" } } })
+          end
+          best_score = math.max(best_score, score)
         end
       end
 
