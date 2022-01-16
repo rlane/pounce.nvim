@@ -7,7 +7,7 @@ local CURRENT_LINE_BONUS = 1
 
 local M = {
   config = {
-    accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ",
+    accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
     debug = false,
   },
 }

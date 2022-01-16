@@ -42,7 +42,7 @@ Configuration is done with the `setup` function. The defaults:
 
 ```lua
 require'pounce'.setup{
-  accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ",
+  accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
   debug = false,
 }
 ```
