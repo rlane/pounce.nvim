@@ -34,3 +34,12 @@ No mappings are created by default. Here's a suggestion:
 nmap s <cmd>Pounce<CR>
 vmap s <cmd>Pounce<CR>
 ```
+
+Configuration is done with the `setup` method. The defaults:
+
+```lua
+require'pounce'.setup{
+  accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ",
+  debug = false,
+}
+```

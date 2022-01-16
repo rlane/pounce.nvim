@@ -2,11 +2,20 @@ local fzy = require "pounce_fzy_lua"
 local log = require "log"
 local vim = vim
 
-local M = {}
-M.debug = false
-M.accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ"
-
 local MAX_MATCHES_PER_LINE = 10
+
+local M = {
+  config = {
+    accept_keys = "FJGHDKSLARVUMNYTBIECWXOPQZ",
+    debug = false,
+  }
+}
+
+function M.setup(config)
+  for k, v in pairs(config) do
+    M.config[k] = v
+  end
+end
 
 -- Returns the most relevant non-overlapping matches on a line.
 local function match(needle_, haystack_)
@@ -88,7 +97,7 @@ function M.pounce()
         local matches = match(input, text)
         for _, m in ipairs(matches) do
           table.insert(hits, { line = line, indices = m.indices, score = m.score })
-          if M.debug then
+          if M.config.debug then
             vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(m.score), "IncSearch" } } })
           end
           best_score = math.max(best_score, m.score)
@@ -119,8 +128,8 @@ function M.pounce()
           vim.api.nvim_buf_add_highlight(buf, ns, "PounceMatch", hit.line - 1, index - 1, index)
         end
 
-        if idx <= M.accept_keys:len() then
-          local accept_key = M.accept_keys:sub(idx, idx)
+        if idx <= M.config.accept_keys:len() then
+          local accept_key = M.config.accept_keys:sub(idx, idx)
           accept_key_to_position[accept_key] = { hit.line, hit.indices[1] - 1 }
           vim.api.nvim_buf_set_extmark(
             buf,
