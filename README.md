@@ -3,9 +3,9 @@
 Pounce is a motion plugin similar to [EasyMotion][1], [Sneak][2], [Hop][3], and
 [Lightspeed][4]. It's based on incremental fuzzy search. Here's a demo:
 
-[![asciicast](https://asciinema.org/a/Mu6MA8FGD9V86OheA50gG2cmL.svg)](https://asciinema.org/a/Mu6MA8FGD9V86OheA50gG2cmL)
+[![asciicast](https://asciinema.org/a/7iNjH7JjHoPSskD2kovijjVfP.svg)](https://asciinema.org/a/7iNjH7JjHoPSskD2kovijjVfP)
 
-The demo shows searching for the word "ht\_mask" by typing "htm" and then "F"
+The demo shows searching for the word "ht\_mask" by typing "htm" and then "J"
 to select a match.
 
 [1]: https://github.com/easymotion/vim-easymotion
