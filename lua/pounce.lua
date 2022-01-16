@@ -3,7 +3,7 @@ local log = require "log"
 local vim = vim
 
 local MAX_MATCHES_PER_LINE = 10
-local CURRENT_LINE_BONUS = 5
+local CURRENT_LINE_BONUS = 1
 
 local M = {
   config = {
