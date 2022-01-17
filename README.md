@@ -38,7 +38,8 @@ vmap s <cmd>Pounce<CR>
 omap gs <cmd>Pounce<CR>  " 's' is used by vim-surround
 ```
 
-Configuration is done with the `setup` function. The defaults:
+Configuration is done with the `setup` function. It's optional to call `setup`.
+Here are the defaults:
 
 ```lua
 require'pounce'.setup{
@@ -46,3 +47,15 @@ require'pounce'.setup{
   debug = false,
 }
 ```
+
+## Related Work
+
+There are quite a few plugins in this space. Here are some alternatives to
+Pounce:
+
+- https://github.com/easymotion/vim-easymotion
+- https://github.com/justinmk/vim-sneak
+- https://github.com/phaazon/hop.nvim
+- https://github.com/ggandor/lightspeed.nvim
+- https://github.com/yuki-yano/fuzzy-motion.vim
+- https://github.com/hrsh7th/vim-searchx
