@@ -9,6 +9,7 @@ local M = {
   config = {
     accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
     debug = false,
+    experimental_enter_accepts_top_match = true,
   },
 }
 
@@ -69,19 +70,28 @@ function M.pounce()
 
     local start_clock = os.clock()
 
+    local function jump_to(pos)
+      vim.cmd "normal! m'"
+      vim.api.nvim_win_set_cursor(win, pos)
+    end
+
     if nr == 27 then -- escape
       break
     elseif nr == "\x80kb" then -- backspace
       input = input:sub(1, -2)
+    elseif M.config.experimental_enter_accepts_top_match and nr == 13 then -- enter
+      local accepted = accept_key_to_position[M.config.accept_keys:sub(1, 1)]
+      if accepted ~= nil then
+        jump_to(accepted)
+        break
+      end
     elseif type(nr) == "number" and (nr < 32 or nr == 127) then
       -- ignore
     else
       local ch = vim.fn.nr2char(nr)
       local accepted = accept_key_to_position[ch]
       if accepted ~= nil then
-        -- accept match
-        vim.cmd "normal! m'"
-        vim.api.nvim_win_set_cursor(win, accepted)
+        jump_to(accepted)
         break
       end
       input = input .. ch
@@ -136,13 +146,15 @@ function M.pounce()
 
         if idx <= M.config.accept_keys:len() then
           local accept_key = M.config.accept_keys:sub(idx, idx)
+          local hl = (idx == 1 and M.config.experimental_enter_accepts_top_match) and "PounceAcceptBest"
+            or "PounceAccept"
           accept_key_to_position[accept_key] = { hit.line, hit.indices[1] - 1 }
           vim.api.nvim_buf_set_extmark(
             buf,
             ns,
             hit.line - 1,
             hit.indices[1] - 1,
-            { virt_text = { { accept_key, "PounceAccept" } }, virt_text_pos = "overlay" }
+            { virt_text = { { accept_key, hl } }, virt_text_pos = "overlay" }
           )
         end
       end
