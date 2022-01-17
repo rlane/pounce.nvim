@@ -44,6 +44,7 @@ Here are the defaults:
 ```lua
 require'pounce'.setup{
   accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
+  multi_window = true,
   debug = false,
 }
 ```

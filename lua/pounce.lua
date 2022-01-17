@@ -4,10 +4,12 @@ local vim = vim
 
 local MAX_MATCHES_PER_LINE = 10
 local CURRENT_LINE_BONUS = 1
+local CURRENT_WINDOW_BONUS = 0.5
 
 local M = {
   config = {
     accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
+    multi_window = true,
     debug = false,
   },
 }
@@ -50,14 +52,11 @@ local function match(needle_, haystack_)
 end
 
 function M.pounce()
-  local win = vim.api.nvim_get_current_win()
-  local buf = vim.api.nvim_win_get_buf(win)
-  local win_info = vim.fn.getwininfo(win)[1]
+  local windows = M.config.multi_window and vim.api.nvim_tabpage_list_wins(0) or { vim.api.nvim_get_current_win() }
   local ns = vim.api.nvim_create_namespace ""
-  local cursor_line = vim.api.nvim_win_get_cursor(win)[1]
 
   local input = ""
-  local accept_key_to_position = {}
+  local accept_key_map = {}
 
   while true do
     vim.api.nvim_echo({ { "pounce> ", "Keyword" }, { input } }, false, {})
@@ -77,39 +76,54 @@ function M.pounce()
       -- ignore
     else
       local ch = vim.fn.nr2char(nr)
-      local accepted = accept_key_to_position[ch]
+      local accepted = accept_key_map[ch]
       if accepted ~= nil then
         -- accept match
         vim.cmd "normal! m'"
-        vim.api.nvim_win_set_cursor(win, accepted)
+        vim.api.nvim_win_set_cursor(accepted.window, accepted.position)
+        vim.api.nvim_set_current_win(accepted.window)
         break
       end
       input = input .. ch
     end
 
-    accept_key_to_position = {}
+    accept_key_map = {}
 
-    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+    for _, win in ipairs(windows) do
+      vim.api.nvim_buf_clear_namespace(vim.api.nvim_win_get_buf(win), ns, 0, -1)
+    end
 
     if input ~= "" then
       local hits = {}
       local best_score = 0
-      for line = win_info.topline, win_info.botline do
-        local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1]
-        local matches = match(input, text)
-        for _, m in ipairs(matches) do
-          local score = m.score
-          if line == cursor_line then
-            score = score + CURRENT_LINE_BONUS
+      local current_win = vim.api.nvim_get_current_win()
+
+      -- Find and score all matches in visible buffer regions.
+      for _, win in ipairs(windows) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        local win_info = vim.fn.getwininfo(win)[1]
+        local cursor_line = vim.api.nvim_win_get_cursor(win)[1]
+        for line = win_info.topline, win_info.botline do
+          local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1]
+          local matches = match(input, text)
+          for _, m in ipairs(matches) do
+            local score = m.score
+            if win == current_win then
+              score = score + CURRENT_WINDOW_BONUS
+              if line == cursor_line then
+                score = score + CURRENT_LINE_BONUS
+              end
+            end
+            table.insert(hits, { window = win, line = line, indices = m.indices, score = score })
+            if M.config.debug then
+              vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(score), "IncSearch" } } })
+            end
+            best_score = math.max(best_score, score)
           end
-          table.insert(hits, { line = line, indices = m.indices, score = score })
-          if M.config.debug then
-            vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(score), "IncSearch" } } })
-          end
-          best_score = math.max(best_score, score)
         end
       end
 
+      -- Discard relatively low-scoring matches.
       local filtered_hits = {}
       for _, hit in ipairs(hits) do
         if hit.score > best_score / 2 then
@@ -121,29 +135,37 @@ function M.pounce()
         return a.score > b.score
       end)
 
+      -- Highlight and assign accept keys to matches.
+      local seen = {}
       for idx, hit in ipairs(filtered_hits) do
-        vim.api.nvim_buf_add_highlight(
-          buf,
-          ns,
-          "PounceGap",
-          hit.line - 1,
-          hit.indices[1] - 1,
-          hit.indices[#hit.indices] - 1
-        )
-        for _, index in ipairs(hit.indices) do
-          vim.api.nvim_buf_add_highlight(buf, ns, "PounceMatch", hit.line - 1, index - 1, index)
-        end
-
-        if idx <= M.config.accept_keys:len() then
-          local accept_key = M.config.accept_keys:sub(idx, idx)
-          accept_key_to_position[accept_key] = { hit.line, hit.indices[1] - 1 }
-          vim.api.nvim_buf_set_extmark(
+        local buf = vim.api.nvim_win_get_buf(hit.window)
+        -- Avoid duplication when the same buffer is visible in multiple windows.
+        local seen_key = string.format("%d.%d.%d", buf, hit.line, hit.indices[1])
+        if seen[seen_key] == nil then
+          seen[seen_key] = true
+          vim.api.nvim_buf_add_highlight(
             buf,
             ns,
+            "PounceGap",
             hit.line - 1,
             hit.indices[1] - 1,
-            { virt_text = { { accept_key, "PounceAccept" } }, virt_text_pos = "overlay" }
+            hit.indices[#hit.indices] - 1
           )
+          for _, index in ipairs(hit.indices) do
+            vim.api.nvim_buf_add_highlight(buf, ns, "PounceMatch", hit.line - 1, index - 1, index)
+          end
+
+          if idx <= M.config.accept_keys:len() then
+            local accept_key = M.config.accept_keys:sub(idx, idx)
+            accept_key_map[accept_key] = { window = hit.window, position = { hit.line, hit.indices[1] - 1 } }
+            vim.api.nvim_buf_set_extmark(
+              buf,
+              ns,
+              hit.line - 1,
+              hit.indices[1] - 1,
+              { virt_text = { { accept_key, "PounceAccept" } }, virt_text_pos = "overlay" }
+            )
+          end
         end
       end
     end
@@ -152,7 +174,9 @@ function M.pounce()
     log.debug("Matching took " .. elapsed * 1000 .. "ms")
   end
 
-  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+  for _, win in ipairs(windows) do
+    vim.api.nvim_buf_clear_namespace(vim.api.nvim_win_get_buf(win), ns, 0, -1)
+  end
   vim.api.nvim_echo({}, false, {})
 end
 
