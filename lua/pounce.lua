@@ -14,6 +14,8 @@ local M = {
   },
 }
 
+local last_input = ""
+
 function M.setup(config)
   for k, v in pairs(config) do
     M.config[k] = v
@@ -51,43 +53,15 @@ local function match(needle_, haystack_)
   return results
 end
 
-function M.pounce()
+function M.pounce(opts)
   local windows = M.config.multi_window and vim.api.nvim_tabpage_list_wins(0) or { vim.api.nvim_get_current_win() }
   local ns = vim.api.nvim_create_namespace ""
-
-  local input = ""
-  local accept_key_map = {}
+  local input = opts.do_repeat and last_input or ""
 
   while true do
-    vim.api.nvim_echo({ { "pounce> ", "Keyword" }, { input } }, false, {})
-    vim.cmd "redraw"
-    local ok, nr = pcall(vim.fn.getchar)
-    if not ok then
-      break
-    end
-
     local start_clock = os.clock()
 
-    if nr == 27 then -- escape
-      break
-    elseif nr == "\x80kb" then -- backspace
-      input = input:sub(1, -2)
-    elseif type(nr) == "number" and (nr < 32 or nr == 127) then
-      -- ignore
-    else
-      local ch = vim.fn.nr2char(nr)
-      local accepted = accept_key_map[ch]
-      if accepted ~= nil then
-        -- accept match
-        vim.cmd "normal! m'"
-        vim.api.nvim_win_set_cursor(accepted.window, accepted.position)
-        vim.api.nvim_set_current_win(accepted.window)
-        break
-      end
-      input = input .. ch
-    end
-
-    accept_key_map = {}
+    local accept_key_map = {}
 
     for _, win in ipairs(windows) do
       vim.api.nvim_buf_clear_namespace(vim.api.nvim_win_get_buf(win), ns, 0, -1)
@@ -172,6 +146,34 @@ function M.pounce()
 
     local elapsed = os.clock() - start_clock
     log.debug("Matching took " .. elapsed * 1000 .. "ms")
+
+    vim.api.nvim_echo({ { "pounce> ", "Keyword" }, { input } }, false, {})
+    vim.cmd "redraw"
+
+    local ok, nr = pcall(vim.fn.getchar)
+    if not ok then
+      break
+    end
+
+    if nr == 27 then -- escape
+      break
+    elseif nr == "\x80kb" then -- backspace
+      input = input:sub(1, -2)
+    elseif type(nr) == "number" and (nr < 32 or nr == 127) then
+      -- ignore
+    else
+      local ch = vim.fn.nr2char(nr)
+      local accepted = accept_key_map[ch]
+      if accepted ~= nil then
+        -- accept match
+        vim.cmd "normal! m'"
+        vim.api.nvim_win_set_cursor(accepted.window, accepted.position)
+        vim.api.nvim_set_current_win(accepted.window)
+        break
+      end
+      input = input .. ch
+    end
+    last_input = input
   end
 
   for _, win in ipairs(windows) do
