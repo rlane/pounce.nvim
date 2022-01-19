@@ -56,7 +56,7 @@ end
 function M.pounce(opts)
   local windows = M.config.multi_window and vim.api.nvim_tabpage_list_wins(0) or { vim.api.nvim_get_current_win() }
   local ns = vim.api.nvim_create_namespace ""
-  local input = opts.do_repeat and last_input or ""
+  local input = opts and opts.do_repeat and last_input or ""
 
   while true do
     local start_clock = os.clock()
