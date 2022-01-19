@@ -10,3 +10,25 @@ Commands~
     key". You can hit that key to jump to the match, or continue refining the
     search. Escape cancels the motion and leaves the cursor at its previous
     position.
+
+`:PounceRepeat`                                                 *:PounceRepeat*
+    Start a new Pounce motion with the input from the previous one.
+
+Highlights~
+
+    * `PounceMatch`: Characters that match the fuzzy search pattern.
+    * `PounceGap`: Characters inside a match that are not part of the pattern.
+    * `PounceAccept`: "Accept keys" that can be used to jump to the match.
+
+Configuration~
+
+  Configuration is done with the `setup` function. It's optional to call
+  `setup`. Here are the defaults:
+
+  >
+  require'pounce'.setup{
+    accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
+    multi_window = true,
+    debug = false,
+  }
+<
