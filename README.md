@@ -30,10 +30,14 @@ first letter of the match will be replaced with an uppercase "accept key". You
 can hit that key to jump to the match, or continue refining the search. Escape
 cancels the motion and leaves the cursor at its previous position.
 
+The `:PounceRepeat` command works the same way but is initialized with the
+input from the previous Pounce command.
+
 No mappings are created by default. Here's a suggestion:
 
 ```vim
 nmap s <cmd>Pounce<CR>
+nmap S <cmd>PounceRepeat<CR>
 vmap s <cmd>Pounce<CR>
 omap gs <cmd>Pounce<CR>  " 's' is used by vim-surround
 ```
