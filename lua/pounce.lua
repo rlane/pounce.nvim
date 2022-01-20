@@ -23,7 +23,7 @@ function M.setup(config)
 end
 
 -- Returns the most relevant non-overlapping matches on a line.
-local function match(needle_, haystack_)
+function M.match(needle_, haystack_)
   local match_inner = nil
   local results = {}
   match_inner = function(needle, haystack, offset)
@@ -82,7 +82,7 @@ function M.pounce(opts)
         local cursor_line = vim.api.nvim_win_get_cursor(win)[1]
         for line = win_info.topline, win_info.botline do
           local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1]
-          local matches = match(input, text)
+          local matches = M.match(input, text)
           for _, m in ipairs(matches) do
             local score = m.score
             if win == current_win then
