@@ -62,15 +62,15 @@ function fzy.has_match(needle, haystack, case_sensitive)
 end
 
 local function is_lower(c)
-  return c:match("%l")
+  return c:match "%l"
 end
 
 local function is_upper(c)
-  return c:match("%u")
+  return c:match "%u"
 end
 
 local function is_word(c)
-  return c:match("[%w_]")
+  return c:match "[%w_]"
 end
 
 local function precompute_bonus(haystack)
@@ -202,8 +202,7 @@ function fzy.positions(needle, haystack, case_sensitive)
   for i = n, 1, -1 do
     while j >= 1 do
       if D[i][j] ~= SCORE_MIN and (match_required or D[i][j] == M[i][j]) then
-        match_required = (i ~= 1) and (j ~= 1) and (
-        M[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE)
+        match_required = (i ~= 1) and (j ~= 1) and (M[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE)
         positions[i] = j
         j = j - 1
         break
@@ -234,7 +233,7 @@ function fzy.filter(needle, haystacks, case_sensitive)
   for i, line in ipairs(haystacks) do
     if fzy.has_match(needle, line, case_sensitive) then
       local p, s = fzy.positions(needle, line, case_sensitive)
-      table.insert(result, {i, p, s})
+      table.insert(result, { i, p, s })
     end
   end
 
