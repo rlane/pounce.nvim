@@ -22,6 +22,7 @@
 
 -- The scoring function is modified from the original.
 local SCORE_GAP_INNER = -0.1
+local SCORE_GAP_SPACE = -0.5
 local SCORE_MATCH_CONSECUTIVE = 1.0
 local SCORE_MATCH_WORD = 0.8
 local SCORE_MATCH_EOL = 0.8
@@ -72,6 +73,10 @@ local function is_word(c)
   return c:match "[%w_]"
 end
 
+local function is_space(c)
+  return c:match "[%s]"
+end
+
 local function precompute_bonus(haystack)
   local match_bonus = {}
 
@@ -111,8 +116,10 @@ local function compute(needle, haystack, D, M, case_sensitive)
   -- Because lua only grants access to chars through substring extraction,
   -- get all the characters from the haystack once now, to reuse below.
   local haystack_chars = {}
+  local gap_scores = {}
   for i = 1, m do
     haystack_chars[i] = haystack:sub(i, i)
+    gap_scores[i] = is_space(haystack_chars[i]) and SCORE_GAP_SPACE or SCORE_GAP_INNER
   end
 
   for i = 1, n do
@@ -120,10 +127,11 @@ local function compute(needle, haystack, D, M, case_sensitive)
     M[i] = {}
 
     local prev_score = SCORE_MIN
-    local gap_score = i < n and SCORE_GAP_INNER or 0
     local needle_char = needle:sub(i, i)
 
     for j = 1, m do
+      local gap_score = i < n and gap_scores[j] or 0
+
       if needle_char == haystack_chars[j] then
         local score = SCORE_MIN
         if i == 1 then

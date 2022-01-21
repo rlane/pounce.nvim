@@ -8,7 +8,14 @@ local function better_match(state, arguments)
   if a > b then
     return true
   else
-    state.failure_message = string.format("expected \"%s\" (score %d) to be better than \"%s\" (score %d) for needle \"%s\"", arguments[2], a, arguments[3], b, needle)
+    state.failure_message = string.format(
+      'expected "%s" (score %d) to be better than "%s" (score %d) for needle "%s"',
+      arguments[2],
+      a,
+      arguments[3],
+      b,
+      needle
+    )
     return false
   end
 end
@@ -45,6 +52,10 @@ describe("Fuzzy matcher", function()
 
   it("prefers short matches", function()
     assert.better_match("ab", "acb", "accb")
+  end)
+
+  it("penalizes spaces in gaps", function()
+    assert.better_match("ab", "xaxxxbx", "xax xbx")
   end)
 end)
 
