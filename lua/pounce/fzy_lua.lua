@@ -23,9 +23,7 @@
 -- The scoring function is modified from the original.
 local SCORE_GAP_INNER = -0.1
 local SCORE_MATCH_CONSECUTIVE = 1.0
-local SCORE_MATCH_SLASH = 0.9
 local SCORE_MATCH_WORD = 0.8
-local SCORE_MATCH_CAPITAL = 0.7
 local SCORE_MIN = -math.huge
 local MATCH_MAX_LENGTH = 1024
 
@@ -79,12 +77,10 @@ local function precompute_bonus(haystack)
   local last_char = "/"
   for i = 1, string.len(haystack) do
     local this_char = haystack:sub(i, i)
-    if last_char == "/" or last_char == "\\" then
-      match_bonus[i] = SCORE_MATCH_SLASH
-    elseif not is_word(last_char) or last_char == "_" then
+    if not is_word(last_char) or last_char == "_" then
       match_bonus[i] = SCORE_MATCH_WORD
     elseif is_lower(last_char) and is_upper(this_char) then
-      match_bonus[i] = SCORE_MATCH_CAPITAL
+      match_bonus[i] = SCORE_MATCH_WORD
     else
       match_bonus[i] = 0
     end
