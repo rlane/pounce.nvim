@@ -1,5 +1,5 @@
-local fzy = require "pounce_fzy_lua"
-local pounce = require "pounce"
+local fzy = require "pounce.fzy_lua"
+local matcher = require "pounce.matcher"
 
 local function better_match(_, arguments)
   local needle = arguments[1]
@@ -29,7 +29,7 @@ describe('Fuzzy matcher', function()
 end)
 
 local function multimatch(needle, haystack)
-  local matches = pounce.match(needle, haystack)
+  local matches = matcher.match(needle, haystack)
   table.sort(matches, function(a, b)
     return a.score > b.score
   end)
