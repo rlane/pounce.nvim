@@ -1,8 +1,7 @@
-local fzy = require "pounce_fzy_lua"
-local log = require "log"
+local matcher = require "pounce.matcher"
+local log = require "pounce.log"
 local vim = vim
 
-local MAX_MATCHES_PER_LINE = 10
 local CURRENT_LINE_BONUS = 1
 local CURRENT_WINDOW_BONUS = 0.5
 
@@ -20,37 +19,6 @@ function M.setup(config)
   for k, v in pairs(config) do
     M.config[k] = v
   end
-end
-
--- Returns the most relevant non-overlapping matches on a line.
-function M.match(needle_, haystack_)
-  local match_inner = nil
-  local results = {}
-  match_inner = function(needle, haystack, offset)
-    if #results >= MAX_MATCHES_PER_LINE then
-      return
-    end
-
-    if fzy.has_match(needle, haystack, false) then
-      local indices, score = fzy.positions(needle, haystack, false)
-      local left_haystack = string.sub(haystack, 1, indices[1] - 1)
-      local right_haystack = string.sub(haystack, indices[#indices] + 1, -1)
-      assert(left_haystack:len() < haystack:len())
-      assert(right_haystack:len() < haystack:len())
-
-      for i, v in ipairs(indices) do
-        indices[i] = v + offset
-        assert(indices[i] <= haystack_:len())
-      end
-      table.insert(results, { indices = indices, score = score })
-
-      match_inner(needle, left_haystack, offset)
-      return match_inner(needle, right_haystack, indices[#indices])
-    end
-  end
-
-  match_inner(needle_, haystack_, 0)
-  return results
 end
 
 function M.pounce(opts)
@@ -82,7 +50,7 @@ function M.pounce(opts)
         local cursor_line = vim.api.nvim_win_get_cursor(win)[1]
         for line = win_info.topline, win_info.botline do
           local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1]
-          local matches = M.match(input, text)
+          local matches = matcher.match(input, text)
           for _, m in ipairs(matches) do
             local score = m.score
             if win == current_win then
@@ -101,20 +69,15 @@ function M.pounce(opts)
       end
 
       -- Discard relatively low-scoring matches.
-      local filtered_hits = {}
-      for _, hit in ipairs(hits) do
-        if hit.score > best_score / 2 then
-          table.insert(filtered_hits, hit)
-        end
-      end
+      hits = matcher.filter(hits)
 
-      table.sort(filtered_hits, function(a, b)
+      table.sort(hits, function(a, b)
         return a.score > b.score
       end)
 
       -- Highlight and assign accept keys to matches.
       local seen = {}
-      for idx, hit in ipairs(filtered_hits) do
+      for idx, hit in ipairs(hits) do
         local buf = vim.api.nvim_win_get_buf(hit.window)
         -- Avoid duplication when the same buffer is visible in multiple windows.
         local seen_key = string.format("%d.%d.%d", buf, hit.line, hit.indices[1])

@@ -22,10 +22,10 @@
 
 -- The scoring function is modified from the original.
 local SCORE_GAP_INNER = -0.1
+local SCORE_GAP_SPACE = -0.5
 local SCORE_MATCH_CONSECUTIVE = 1.0
-local SCORE_MATCH_SLASH = 0.9
 local SCORE_MATCH_WORD = 0.8
-local SCORE_MATCH_CAPITAL = 0.7
+local SCORE_MATCH_EOL = 0.8
 local SCORE_MIN = -math.huge
 local MATCH_MAX_LENGTH = 1024
 
@@ -62,15 +62,19 @@ function fzy.has_match(needle, haystack, case_sensitive)
 end
 
 local function is_lower(c)
-  return c:match("%l")
+  return c:match "%l"
 end
 
 local function is_upper(c)
-  return c:match("%u")
+  return c:match "%u"
 end
 
 local function is_word(c)
-  return c:match("[%w_]")
+  return c:match "[%w_]"
+end
+
+local function is_space(c)
+  return c:match "[%s]"
 end
 
 local function precompute_bonus(haystack)
@@ -78,17 +82,19 @@ local function precompute_bonus(haystack)
 
   local last_char = "/"
   for i = 1, string.len(haystack) do
+    local bonus = 0
     local this_char = haystack:sub(i, i)
-    if last_char == "/" or last_char == "\\" then
-      match_bonus[i] = SCORE_MATCH_SLASH
-    elseif not is_word(last_char) or last_char == "_" then
-      match_bonus[i] = SCORE_MATCH_WORD
+
+    if not is_word(last_char) or last_char == "_" then
+      bonus = SCORE_MATCH_WORD
     elseif is_lower(last_char) and is_upper(this_char) then
-      match_bonus[i] = SCORE_MATCH_CAPITAL
-    else
-      match_bonus[i] = 0
+      bonus = SCORE_MATCH_WORD
+    elseif i == string.len(haystack) then
+      bonus = SCORE_MATCH_EOL
     end
 
+    assert(bonus < SCORE_MATCH_CONSECUTIVE)
+    match_bonus[i] = bonus
     last_char = this_char
   end
 
@@ -110,8 +116,10 @@ local function compute(needle, haystack, D, M, case_sensitive)
   -- Because lua only grants access to chars through substring extraction,
   -- get all the characters from the haystack once now, to reuse below.
   local haystack_chars = {}
+  local gap_scores = {}
   for i = 1, m do
     haystack_chars[i] = haystack:sub(i, i)
+    gap_scores[i] = is_space(haystack_chars[i]) and SCORE_GAP_SPACE or SCORE_GAP_INNER
   end
 
   for i = 1, n do
@@ -119,17 +127,18 @@ local function compute(needle, haystack, D, M, case_sensitive)
     M[i] = {}
 
     local prev_score = SCORE_MIN
-    local gap_score = i < n and SCORE_GAP_INNER or 0
     local needle_char = needle:sub(i, i)
 
     for j = 1, m do
+      local gap_score = i < n and gap_scores[j] or 0
+
       if needle_char == haystack_chars[j] then
         local score = SCORE_MIN
         if i == 1 then
           score = match_bonus[j]
         elseif j > 1 then
           local a = M[i - 1][j - 1] + match_bonus[j]
-          local b = D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE
+          local b = D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE + match_bonus[j]
           score = math.max(a, b)
         end
         D[i][j] = score
@@ -202,8 +211,7 @@ function fzy.positions(needle, haystack, case_sensitive)
   for i = n, 1, -1 do
     while j >= 1 do
       if D[i][j] ~= SCORE_MIN and (match_required or D[i][j] == M[i][j]) then
-        match_required = (i ~= 1) and (j ~= 1) and (
-        M[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE)
+        match_required = (i ~= 1) and (j ~= 1) and (M[i][j] == D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE)
         positions[i] = j
         j = j - 1
         break
@@ -234,7 +242,7 @@ function fzy.filter(needle, haystacks, case_sensitive)
   for i, line in ipairs(haystacks) do
     if fzy.has_match(needle, line, case_sensitive) then
       local p, s = fzy.positions(needle, line, case_sensitive)
-      table.insert(result, {i, p, s})
+      table.insert(result, { i, p, s })
     end
   end
 
