@@ -19,6 +19,7 @@ Highlights~
     * `PounceMatch`: Characters that match the fuzzy search pattern.
     * `PounceGap`: Characters inside a match that are not part of the pattern.
     * `PounceAccept`: "Accept keys" that can be used to jump to the match.
+    * `PounceAcceptBest`: Highlights the accept key for the best match.
 
 Configuration~
 
@@ -28,7 +29,12 @@ Configuration~
   >
   require'pounce'.setup{
     accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
+    accept_best_key = "<enter>",
     multi_window = true,
     debug = false,
   }
 <
+
+  The `accept_best_key` option can be set to a key (default "<enter>") which
+  when pressed accepts the best match. If nil, the extra highlighting of the
+  best match is also disabled.

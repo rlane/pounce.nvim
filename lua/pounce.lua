@@ -8,6 +8,7 @@ local CURRENT_WINDOW_BONUS = 0.5
 local M = {
   config = {
     accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
+    accept_best_key = "<enter>",
     multi_window = true,
     debug = false,
   },
@@ -98,12 +99,18 @@ function M.pounce(opts)
           if idx <= M.config.accept_keys:len() then
             local accept_key = M.config.accept_keys:sub(idx, idx)
             accept_key_map[accept_key] = { window = hit.window, position = { hit.line, hit.indices[1] - 1 } }
+            local hl = "PounceAccept"
+            if idx == 1 and M.config.accept_best_key then
+              hl = "PounceAcceptBest"
+              local key = vim.api.nvim_replace_termcodes(M.config.accept_best_key, true, true, true)
+              accept_key_map[key] = accept_key_map[accept_key]
+            end
             vim.api.nvim_buf_set_extmark(
               buf,
               ns,
               hit.line - 1,
               hit.indices[1] - 1,
-              { virt_text = { { accept_key, "PounceAccept" } }, virt_text_pos = "overlay" }
+              { virt_text = { { accept_key, hl } }, virt_text_pos = "overlay" }
             )
           end
         end
@@ -125,8 +132,6 @@ function M.pounce(opts)
       break
     elseif nr == "\x80kb" then -- backspace
       input = input:sub(1, -2)
-    elseif type(nr) == "number" and (nr < 32 or nr == 127) then
-      -- ignore
     else
       local ch = vim.fn.nr2char(nr)
       local accepted = accept_key_map[ch]
@@ -136,8 +141,11 @@ function M.pounce(opts)
         vim.api.nvim_win_set_cursor(accepted.window, accepted.position)
         vim.api.nvim_set_current_win(accepted.window)
         break
+      elseif type(nr) == "number" and (nr < 32 or nr == 127) then
+        -- ignore
+      else
+        input = input .. ch
       end
-      input = input .. ch
     end
     last_input = input
   end
