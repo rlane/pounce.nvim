@@ -24,6 +24,7 @@
 local SCORE_GAP_INNER = -0.1
 local SCORE_MATCH_CONSECUTIVE = 1.0
 local SCORE_MATCH_WORD = 0.8
+local SCORE_MATCH_EOL = 0.8
 local SCORE_MIN = -math.huge
 local MATCH_MAX_LENGTH = 1024
 
@@ -76,15 +77,19 @@ local function precompute_bonus(haystack)
 
   local last_char = "/"
   for i = 1, string.len(haystack) do
+    local bonus = 0
     local this_char = haystack:sub(i, i)
+
     if not is_word(last_char) or last_char == "_" then
-      match_bonus[i] = SCORE_MATCH_WORD
+      bonus = SCORE_MATCH_WORD
     elseif is_lower(last_char) and is_upper(this_char) then
-      match_bonus[i] = SCORE_MATCH_WORD
-    else
-      match_bonus[i] = 0
+      bonus = SCORE_MATCH_WORD
+    elseif i == string.len(haystack) then
+      bonus = SCORE_MATCH_EOL
     end
 
+    assert(bonus < SCORE_MATCH_CONSECUTIVE)
+    match_bonus[i] = bonus
     last_char = this_char
   end
 
@@ -125,7 +130,7 @@ local function compute(needle, haystack, D, M, case_sensitive)
           score = match_bonus[j]
         elseif j > 1 then
           local a = M[i - 1][j - 1] + match_bonus[j]
-          local b = D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE
+          local b = D[i - 1][j - 1] + SCORE_MATCH_CONSECUTIVE + match_bonus[j]
           score = math.max(a, b)
         end
         D[i][j] = score
