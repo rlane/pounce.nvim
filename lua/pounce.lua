@@ -23,10 +23,12 @@ function M.setup(config)
 end
 
 function M.pounce(opts)
+  local active_win = vim.api.nvim_get_current_win()
+  local cursor_pos = vim.api.nvim_win_get_cursor(active_win)
   local windows = not string.find(vim.api.nvim_get_mode().mode, "o")
       and M.config.multi_window
       and vim.api.nvim_tabpage_list_wins(0)
-    or { vim.api.nvim_get_current_win() }
+    or { active_win }
   local ns = vim.api.nvim_create_namespace ""
   local input = opts and opts.do_repeat and last_input or ""
 
@@ -39,9 +41,18 @@ function M.pounce(opts)
       vim.api.nvim_buf_clear_namespace(vim.api.nvim_win_get_buf(win), ns, 0, -1)
     end
 
+    -- Fake cursor highlight
+    vim.api.nvim_buf_add_highlight(
+      vim.api.nvim_win_get_buf(active_win),
+      ns,
+      "TermCursor",
+      cursor_pos[1] - 1,
+      cursor_pos[2],
+      cursor_pos[2] + 1
+    )
+
     if input ~= "" then
       local hits = {}
-      local best_score = 0
       local current_win = vim.api.nvim_get_current_win()
 
       -- Find and score all matches in visible buffer regions.
@@ -64,7 +75,6 @@ function M.pounce(opts)
             if M.config.debug then
               vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(score), "IncSearch" } } })
             end
-            best_score = math.max(best_score, score)
           end
         end
       end
