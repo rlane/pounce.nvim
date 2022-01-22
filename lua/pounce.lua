@@ -53,7 +53,6 @@ function M.pounce(opts)
 
     if input ~= "" then
       local hits = {}
-      local best_score = 0
       local current_win = vim.api.nvim_get_current_win()
 
       -- Find and score all matches in visible buffer regions.
@@ -76,7 +75,6 @@ function M.pounce(opts)
             if M.config.debug then
               vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(score), "IncSearch" } } })
             end
-            best_score = math.max(best_score, score)
           end
         end
       end
