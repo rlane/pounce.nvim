@@ -5,20 +5,28 @@ local vim = vim
 local CURRENT_LINE_BONUS = 1
 local CURRENT_WINDOW_BONUS = 0.5
 
-local M = {
-  config = {
-    accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
-    accept_best_key = "<enter>",
-    multi_window = true,
-    debug = false,
-  },
+local M = {}
+
+local config = {
+  accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
+  accept_best_key = "<enter>",
+  multi_window = true,
+  debug = false,
 }
 
 local last_input = ""
 
-function M.setup(config)
-  for k, v in pairs(config) do
-    M.config[k] = v
+local function getconfig(key, opts)
+  if opts and opts[key] ~= nil then
+    return opts[key]
+  else
+    return config[key]
+  end
+end
+
+function M.setup(opts)
+  for k, v in pairs(opts) do
+    config[k] = v
   end
 end
 
@@ -26,7 +34,7 @@ function M.pounce(opts)
   local active_win = vim.api.nvim_get_current_win()
   local cursor_pos = vim.api.nvim_win_get_cursor(active_win)
   local windows = not string.find(vim.api.nvim_get_mode().mode, "o")
-      and M.config.multi_window
+      and getconfig("multi_window", opts)
       and vim.api.nvim_tabpage_list_wins(0)
     or { active_win }
   local ns = vim.api.nvim_create_namespace ""
@@ -72,7 +80,7 @@ function M.pounce(opts)
               end
             end
             table.insert(hits, { window = win, line = line, indices = m.indices, score = score })
-            if M.config.debug then
+            if getconfig("debug", opts) then
               vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(score), "IncSearch" } } })
             end
           end
@@ -106,13 +114,14 @@ function M.pounce(opts)
             vim.api.nvim_buf_add_highlight(buf, ns, "PounceMatch", hit.line - 1, index - 1, index)
           end
 
-          if idx <= M.config.accept_keys:len() then
-            local accept_key = M.config.accept_keys:sub(idx, idx)
+          local accept_keys = getconfig("accept_keys", opts)
+          if idx <= accept_keys:len() then
+            local accept_key = accept_keys:sub(idx, idx)
             accept_key_map[accept_key] = { window = hit.window, position = { hit.line, hit.indices[1] - 1 } }
             local hl = "PounceAccept"
-            if idx == 1 and M.config.accept_best_key then
+            if idx == 1 and getconfig("accept_best_key", opts) then
               hl = "PounceAcceptBest"
-              local key = vim.api.nvim_replace_termcodes(M.config.accept_best_key, true, true, true)
+              local key = vim.api.nvim_replace_termcodes(getconfig("accept_best_key", opts), true, true, true)
               accept_key_map[key] = accept_key_map[accept_key]
             end
             vim.api.nvim_buf_set_extmark(
