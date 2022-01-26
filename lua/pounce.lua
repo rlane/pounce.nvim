@@ -79,7 +79,8 @@ function M.pounce(opts)
                 score = score + CURRENT_LINE_BONUS
               end
             end
-            if buf == vim.api.nvim_win_get_buf(active_win)
+            if
+              buf == vim.api.nvim_win_get_buf(active_win)
               and cursor_line == line
               and cursor_col + 1 == m.indices[1]
             then
