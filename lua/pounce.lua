@@ -67,7 +67,7 @@ function M.pounce(opts)
       for _, win in ipairs(windows) do
         local buf = vim.api.nvim_win_get_buf(win)
         local win_info = vim.fn.getwininfo(win)[1]
-        local cursor_line = vim.api.nvim_win_get_cursor(win)[1]
+        local cursor_line, cursor_col = unpack(vim.api.nvim_win_get_cursor(win))
         for line = win_info.topline, win_info.botline do
           local text = vim.api.nvim_buf_get_lines(buf, line - 1, line, false)[1]
           local matches = matcher.match(input, text)
@@ -78,6 +78,13 @@ function M.pounce(opts)
               if line == cursor_line then
                 score = score + CURRENT_LINE_BONUS
               end
+            end
+            if buf == vim.api.nvim_win_get_buf(active_win)
+              and cursor_line == line
+              and cursor_col + 1 == m.indices[1]
+            then
+              -- Ignore match at current cursor position.
+              score = 0
             end
             table.insert(hits, { window = win, line = line, indices = m.indices, score = score })
             if getconfig("debug", opts) then
