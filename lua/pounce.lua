@@ -24,6 +24,23 @@ local function getconfig(key, opts)
   end
 end
 
+local function get_windows(opts)
+  local wins
+  if not string.find(vim.api.nvim_get_mode().mode, "o") and getconfig("multi_window", opts) then
+    wins = vim.api.nvim_tabpage_list_wins(0)
+  else
+    wins = { vim.api.nvim_get_current_win() }
+  end
+  local filtered_wins = {}
+  for _, win in ipairs(wins) do
+    -- Ignore windows we can't switch to (like Telescope).
+    if vim.api.nvim_win_get_config(win).focusable then
+      table.insert(filtered_wins, win)
+    end
+  end
+  return filtered_wins
+end
+
 function M.setup(opts)
   for k, v in pairs(opts) do
     config[k] = v
@@ -33,10 +50,7 @@ end
 function M.pounce(opts)
   local active_win = vim.api.nvim_get_current_win()
   local cursor_pos = vim.api.nvim_win_get_cursor(active_win)
-  local windows = not string.find(vim.api.nvim_get_mode().mode, "o")
-      and getconfig("multi_window", opts)
-      and vim.api.nvim_tabpage_list_wins(0)
-    or { active_win }
+  local windows = get_windows(opts)
   local ns = vim.api.nvim_create_namespace ""
   local input = opts and opts.do_repeat and last_input or ""
 
