@@ -55,6 +55,8 @@ require'pounce'.setup{
 }
 ```
 
+Note that `accept_keys` allows you to configure the order in which accept keys display – closest proximity match gets the first letter in the `accept_keys` string. Users of alternative keyboard layouts may wish to amend that string. Colemak DHm might start with `NTESIROA...` for example.
+
 ## Related Work
 
 There are quite a few plugins in this space. Here are some alternatives to
