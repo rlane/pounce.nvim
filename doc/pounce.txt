@@ -17,6 +17,7 @@ Commands~
 Highlights~
 
     * `PounceMatch`: Characters that match the fuzzy search pattern.
+    * `PounceUnmatched`: Characters that don't match the fuzzy search pattern.
     * `PounceGap`: Characters inside a match that are not part of the pattern.
     * `PounceAccept`: "Accept keys" that can be used to jump to the match.
     * `PounceAcceptBest`: Highlights the accept key for the best match.

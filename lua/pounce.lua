@@ -73,6 +73,17 @@ function M.pounce(opts)
       cursor_pos[2] + 1
     )
 
+    for _, win in ipairs(windows) do
+      local buf = vim.api.nvim_win_get_buf(win)
+      local win_info = vim.fn.getwininfo(win)[1]
+      vim.api.nvim_buf_set_extmark(buf, ns, win_info.topline - 1, 0, {
+        end_line = win_info.botline,
+        hl_group = "PounceUnmatched",
+        hl_eol = true,
+        priority = 65533,
+      })
+    end
+
     if input ~= "" then
       local hits = {}
       local current_win = vim.api.nvim_get_current_win()
