@@ -53,6 +53,7 @@ function M.pounce(opts)
   local windows = get_windows(opts)
   local ns = vim.api.nvim_create_namespace ""
   local input = opts and opts.do_repeat and last_input or ""
+  local hl_prio = 65533
 
   while true do
     local start_clock = os.clock()
@@ -64,14 +65,11 @@ function M.pounce(opts)
     end
 
     -- Fake cursor highlight
-    vim.api.nvim_buf_add_highlight(
-      vim.api.nvim_win_get_buf(active_win),
-      ns,
-      "TermCursor",
-      cursor_pos[1] - 1,
-      cursor_pos[2],
-      cursor_pos[2] + 1
-    )
+    vim.api.nvim_buf_set_extmark(vim.api.nvim_win_get_buf(active_win), ns, cursor_pos[1] - 1, cursor_pos[2], {
+      end_col = cursor_pos[2] + 1,
+      hl_group = "TermCursor",
+      priority = hl_prio,
+    })
 
     for _, win in ipairs(windows) do
       local buf = vim.api.nvim_win_get_buf(win)
@@ -80,7 +78,7 @@ function M.pounce(opts)
         end_line = win_info.botline,
         hl_group = "PounceUnmatched",
         hl_eol = true,
-        priority = 65533,
+        priority = hl_prio,
       })
     end
 
@@ -135,16 +133,17 @@ function M.pounce(opts)
         local seen_key = string.format("%d.%d.%d", buf, hit.line, hit.indices[1])
         if seen[seen_key] == nil then
           seen[seen_key] = true
-          vim.api.nvim_buf_add_highlight(
-            buf,
-            ns,
-            "PounceGap",
-            hit.line - 1,
-            hit.indices[1] - 1,
-            hit.indices[#hit.indices] - 1
-          )
+          vim.api.nvim_buf_set_extmark(buf, ns, hit.line - 1, hit.indices[1] - 1, {
+            end_col = hit.indices[#hit.indices] - 1,
+            hl_group = "PounceGap",
+            priority = hl_prio,
+          })
           for _, index in ipairs(hit.indices) do
-            vim.api.nvim_buf_add_highlight(buf, ns, "PounceMatch", hit.line - 1, index - 1, index)
+            vim.api.nvim_buf_set_extmark(buf, ns, hit.line - 1, index - 1, {
+              end_col = index,
+              hl_group = "PounceMatch",
+              priority = hl_prio,
+            })
           end
 
           local accept_keys = getconfig("accept_keys", opts)
