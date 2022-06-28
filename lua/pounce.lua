@@ -90,7 +90,7 @@ function M.pounce(opts)
         end_line = win_info.botline,
         hl_group = "PounceUnmatched",
         hl_eol = true,
-        priority = hl_prio,
+        priority = hl_prio - 1,
       })
     end
 
