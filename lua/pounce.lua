@@ -65,11 +65,23 @@ function M.pounce(opts)
     end
 
     -- Fake cursor highlight
-    vim.api.nvim_buf_set_extmark(vim.api.nvim_win_get_buf(active_win), ns, cursor_pos[1] - 1, cursor_pos[2], {
-      end_col = cursor_pos[2] + 1,
-      hl_group = "TermCursor",
-      priority = hl_prio,
-    })
+    local cur_line = vim.api.nvim_get_current_line()
+    local cur_col = cursor_pos[2]
+    local cur_row = cursor_pos[1] - 1
+    -- Check to see if cursor is at end of line or on empty line
+    if #cur_line == cur_col then
+      vim.api.nvim_buf_set_extmark(0, ns, cur_row, cur_col, {
+        virt_text = { { "█", "Normal" } },
+        virt_text_pos = "overlay",
+        priority = hl_prio,
+      })
+    else
+      vim.api.nvim_buf_set_extmark(0, ns, cur_row, cur_col, {
+        end_col = cur_col + 1,
+        hl_group = "TermCursor",
+        priority = hl_prio,
+      })
+    end
 
     for _, win in ipairs(windows) do
       local buf = vim.api.nvim_win_get_buf(win)
