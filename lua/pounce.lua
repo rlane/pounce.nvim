@@ -193,7 +193,7 @@ function M.pounce(opts)
 
     if nr == 27 then -- escape
       break
-    elseif nr == "\x80kb" then -- backspace
+    elseif nr == "\x80kb" or nr == 8 then -- backspace or <C-h>
       input = input:sub(1, -2)
     else
       local ch = vim.fn.nr2char(nr)
