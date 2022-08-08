@@ -2,9 +2,6 @@ local matcher = require "pounce.matcher"
 local log = require "pounce.log"
 local vim = vim
 
-local CURRENT_LINE_BONUS = 1
-local CURRENT_WINDOW_BONUS = 0.5
-
 local M = {}
 
 local config = {
@@ -39,6 +36,30 @@ local function get_windows(opts)
     end
   end
   return filtered_wins
+end
+
+local function calculate_proximity_bonus(cursor_line, cursor_col, match_line, match_col)
+  if cursor_line == match_line and cursor_col == match_col then
+    -- Discard match at current cursor position.
+    return -1e6
+  end
+
+  local delta_line = match_line - cursor_line
+  local delta_col = match_col - cursor_col
+
+  local score = 0.5 -- bonus for current window
+  if delta_line == 0 then
+    score = score + 1.0
+  end
+  score = score - math.abs(delta_line) * 1e-3
+  if delta_line < 0 then
+    score = score - 0.5e-3
+  end
+  score = score - math.abs(delta_col) * 1e-6
+  if delta_col < 0 then
+    score = score - 0.5e-6
+  end
+  return score
 end
 
 function M.setup(opts)
@@ -109,19 +130,10 @@ function M.pounce(opts)
           for _, m in ipairs(matches) do
             local score = m.score
             if win == current_win then
-              score = score + CURRENT_WINDOW_BONUS
-              if line == cursor_line then
-                score = score + CURRENT_LINE_BONUS
-              end
+              local col = m.indices[1] - 1
+              score = score + calculate_proximity_bonus(cursor_line, cursor_col, line, col)
             end
-            if
-              buf == vim.api.nvim_win_get_buf(active_win)
-              and cursor_line == line
-              and cursor_col + 1 == m.indices[1]
-            then
-              -- Ignore match at current cursor position.
-              score = 0
-            end
+            score = score + #hits * 1e-9 -- stabilize sort
             table.insert(hits, { window = win, line = line, indices = m.indices, score = score })
             if getconfig("debug", opts) then
               vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(score), "IncSearch" } } })
