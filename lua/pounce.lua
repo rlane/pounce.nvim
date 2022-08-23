@@ -76,6 +76,12 @@ function M.pounce(opts)
   local input = opts and opts.do_repeat and last_input or ""
   local hl_prio = 65533
 
+  local old_cmdheight = vim.o.cmdheight
+  if old_cmdheight == 0 then
+    vim.o.cmdheight = 1
+    vim.cmd "redraw"
+  end
+
   while true do
     local start_clock = os.clock()
 
@@ -229,6 +235,10 @@ function M.pounce(opts)
     vim.api.nvim_buf_clear_namespace(vim.api.nvim_win_get_buf(win), ns, 0, -1)
   end
   vim.api.nvim_echo({}, false, {})
+
+  if vim.o.cmdheight ~= old_cmdheight then
+    vim.o.cmdheight = old_cmdheight
+  end
 end
 
 return M
