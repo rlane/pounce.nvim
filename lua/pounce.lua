@@ -213,6 +213,8 @@ function M.pounce(opts)
       break
     elseif nr == "\x80kb" or nr == 8 then -- backspace or <C-h>
       input = input:sub(1, -2)
+    elseif nr == 21 then -- <C-u>
+      input = ""
     else
       local ch = vim.fn.nr2char(nr)
       local accepted = accept_key_map[ch]
