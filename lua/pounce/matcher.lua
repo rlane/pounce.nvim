@@ -15,6 +15,10 @@ function M.match(needle_, haystack_)
 
     if fzy.has_match(needle, haystack, false) then
       local indices, score = fzy.positions(needle, haystack, false)
+      if #indices == 0 then
+        return
+      end
+
       local left_haystack = string.sub(haystack, 1, indices[1] - 1)
       local right_haystack = string.sub(haystack, indices[#indices] + 1, -1)
       assert(left_haystack:len() < haystack:len())
