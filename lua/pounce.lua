@@ -73,7 +73,14 @@ function M.pounce(opts)
   local cursor_pos = vim.api.nvim_win_get_cursor(active_win)
   local windows = get_windows(opts)
   local ns = vim.api.nvim_create_namespace ""
-  local input = opts and opts.do_repeat and last_input or ""
+  local input = ""
+  if opts then
+    if opts.do_repeat then
+      input = last_input
+    elseif opts.input then
+      input = opts.input
+    end
+  end
   local hl_prio = 65533
 
   local old_cmdheight = vim.o.cmdheight
