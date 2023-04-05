@@ -11,6 +11,77 @@ local config = {
   debug = false,
 }
 
+local default_hl = {
+  -- highlight default PounceMatch cterm=bold ctermfg=black ctermbg=green gui=bold fg=#555555 bg=#11dd11
+  PounceMatch = {
+    ctermfg = "black",
+    ctermbg = "green",
+    bold = true,
+    fg = "#555555",
+    bg = "#11dd11",
+  },
+  -- highlight default link PounceUnmatched None
+  PounceUnmatched = {
+    link = "None",
+  },
+  -- highlight default PounceGap cterm=bold ctermfg=black ctermbg=darkgreen gui=bold fg=#555555 bg=#00aa00
+  PounceGap = {
+    ctermfg = "black",
+    ctermbg = "darkgreen",
+    bold = true,
+    fg = "#555555",
+    bg = "#00aa00",
+  },
+  -- highlight default PounceAccept cterm=bold ctermfg=black ctermbg=lightred gui=bold fg=#111111 bg=#de940b
+  PounceAccept = {
+    ctermfg = "black",
+    ctermbg = "lightred",
+    bold = true,
+    fg = "#111111",
+    bg = "#de940b",
+  },
+  -- highlight default PounceAcceptBest cterm=bold ctermfg=black ctermbg=cyan gui=bold fg=#111111 bg=#03cafc
+  PounceAcceptBest = {
+    ctermfg = "black",
+    ctermbg = "cyan",
+    bold = true,
+    fg = "#111111",
+    bg = "#03cafc",
+  },
+  -- highlight default PounceCursor cterm=bold ctermfg=black ctermbg=red gui=bold fg=#111111 bg=#ff0000
+  PounceCursor = {
+    ctermfg = "black",
+    ctermbg = "red",
+    bold = true,
+    fg = "#111111",
+    bg = "#ff0000",
+  },
+  -- highlight default PounceCursorGap cterm=bold ctermfg=black ctermbg=darkred gui=bold fg=#111111 bg=#aa0000
+  PounceCursorGap = {
+    ctermfg = "black",
+    ctermbg = "darkred",
+    bold = true,
+    fg = "#111111",
+    bg = "#aa0000",
+  },
+  -- highlight default PounceCursorAccept cterm=bold ctermfg=black ctermbg=lightred gui=bold fg=#111111 bg=#de940b
+  PounceCursorAccept = {
+    ctermfg = "black",
+    ctermbg = "lightred",
+    bold = true,
+    fg = "#111111",
+    bg = "#de940b",
+  },
+  -- highlight default PounceCursorAcceptBest cterm=bold ctermfg=black ctermbg=cyan gui=bold fg=#111111 bg=#03cafc
+  PounceCursorAcceptBest = {
+    ctermfg = "black",
+    ctermbg = "cyan",
+    bold = true,
+    fg = "#111111",
+    bg = "#03cafc",
+  },
+}
+
 local last_input = ""
 
 local function get_windows(opts)
@@ -54,8 +125,30 @@ local function calculate_proximity_bonus(cursor_line, cursor_col, match_line, ma
   return score
 end
 
-function M.setup(opts)
+M.config = function(opts)
   config = vim.tbl_extend("force", config, opts or {})
+end
+function M.setup(opts)
+  M.config(opts)
+
+  for hl, spec in pairs(default_hl) do
+    spec.default = true
+    vim.api.nvim_set_hl(0, hl, spec)
+  end
+
+  -- To Lua
+  vim.api.nvim_create_user_command("Pounce", function(args)
+    opts = {}
+    if #args.args > 0 then
+      opts.input = args.args
+    end
+    M.pounce(opts)
+  end, { nargs = "*" })
+  vim.api.nvim_create_user_command("PounceRepeat", function()
+    M.pounce { do_repeat = true }
+  end, {})
+
+  M.setup = M.config -- No longer register the commands, just update the config
 end
 
 function M.pounce(opts)
