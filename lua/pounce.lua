@@ -13,17 +13,9 @@ local config = {
 
 local last_input = ""
 
-local function getconfig(key, opts)
-  if opts and opts[key] ~= nil then
-    return opts[key]
-  else
-    return config[key]
-  end
-end
-
 local function get_windows(opts)
   local wins
-  if not string.find(vim.api.nvim_get_mode().mode, "o") and getconfig("multi_window", opts) then
+  if not string.find(vim.api.nvim_get_mode().mode, "o") and opts.multi_window then
     wins = vim.api.nvim_tabpage_list_wins(0)
   else
     wins = { vim.api.nvim_get_current_win() }
@@ -63,12 +55,11 @@ local function calculate_proximity_bonus(cursor_line, cursor_col, match_line, ma
 end
 
 function M.setup(opts)
-  for k, v in pairs(opts) do
-    config[k] = v
-  end
+  config = vim.tbl_extend("force", config, opts or {})
 end
 
 function M.pounce(opts)
+  opts = vim.tbl_extend("keep", opts or {}, config)
   local active_win = vim.api.nvim_get_current_win()
   local cursor_pos = vim.api.nvim_win_get_cursor(active_win)
   local windows = get_windows(opts)
@@ -148,7 +139,7 @@ function M.pounce(opts)
             end
             score = score + #hits * 1e-9 -- stabilize sort
             table.insert(hits, { window = win, line = line, indices = m.indices, score = score })
-            if getconfig("debug", opts) then
+            if opts.debug then
               vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(score), "IncSearch" } } })
             end
           end
@@ -183,14 +174,14 @@ function M.pounce(opts)
             })
           end
 
-          local accept_keys = getconfig("accept_keys", opts)
+          local accept_keys = opts.accept_keys
           if idx <= accept_keys:len() then
             local accept_key = accept_keys:sub(idx, idx)
             accept_key_map[accept_key] = { window = hit.window, position = { hit.line, hit.indices[1] - 1 } }
             local hl = "PounceAccept"
-            if idx == 1 and getconfig("accept_best_key", opts) then
+            if idx == 1 and opts.accept_best_key then
               hl = "PounceAcceptBest"
-              local key = vim.api.nvim_replace_termcodes(getconfig("accept_best_key", opts), true, true, true)
+              local key = vim.api.nvim_replace_termcodes(opts.accept_best_key, true, true, true)
               accept_key_map[key] = accept_key_map[accept_key]
             end
             vim.api.nvim_buf_set_extmark(
