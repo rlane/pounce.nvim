@@ -125,22 +125,47 @@ local function calculate_proximity_bonus(cursor_line, cursor_col, match_line, ma
   return score
 end
 
+local init_highlights = function()
+  for hl, spec in pairs(default_hl) do
+    spec.default = true
+    vim.api.nvim_set_hl(0, hl, spec)
+  end
+end
+
 M.config = function(opts)
   config = vim.tbl_extend("force", config, opts or {})
 end
 function M.setup(opts)
   M.config(opts)
 
-  for hl, spec in pairs(default_hl) do
-    spec.default = true
-    vim.api.nvim_set_hl(0, hl, spec)
-  end
+  local pounce_highlights = vim.api.nvim_create_augroup("pounce_highlights", {})
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = pounce_highlights,
+    pattern = "*",
+    callback = function()
+      init_highlights()
+    end,
+  })
+  init_highlights()
 
-  -- To Lua
   vim.api.nvim_create_user_command("Pounce", function(args)
     opts = {}
     if #args.args > 0 then
       opts.input = args.args
+    end
+    M.pounce(opts)
+  end, { nargs = "*" })
+  vim.api.nvim_create_user_command("PounceReg", function(args)
+    opts = {}
+    if #args.args > 0 then
+      opts.input = { reg = args.args }
+    end
+    M.pounce(opts)
+  end, { nargs = "*" })
+  vim.api.nvim_create_user_command("PounceExpand", function(args)
+    opts = {}
+    if #args.args > 0 then
+      opts.input = { expand = args.args }
     end
     M.pounce(opts)
   end, { nargs = "*" })
