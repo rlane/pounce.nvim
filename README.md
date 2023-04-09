@@ -94,6 +94,18 @@ display – closest proximity match gets the first letter in the `accept_keys`
 string. Users of alternative keyboard layouts may wish to amend that string.
 Colemak DHm might start with `NTESIROA...` for example.
 
+Below are listed some example extra commands you can use:
+
+```vim
+<cmd>PounceReg /<cr> " Pounce with last search pattern
+<cmd>PounceReg 0<cr> " Pounce with last yank
+<cmd>PounceReg \"<cr> " Pounce with last d/c/y
+<cmd>PounceReg .<cr> " Pounce with last inserted text
+\"zy<cmd>PounceReg z<cr> " From visual mode: Pounce using the selection as the input
+<cmd>PounceExpand <cword><cr> " Pounce with the current word
+<cmd>PounceExpand %<cr> " Pounce with the current filename
+```
+
 ## Related Work
 
 There are quite a few plugins in this space. Here are some alternatives to
