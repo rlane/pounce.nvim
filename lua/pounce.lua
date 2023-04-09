@@ -11,19 +11,82 @@ local config = {
   debug = false,
 }
 
-local last_input = ""
+local default_hl = {
+  -- highlight default PounceMatch cterm=bold ctermfg=black ctermbg=green gui=bold fg=#555555 bg=#11dd11
+  PounceMatch = {
+    ctermfg = "black",
+    ctermbg = "green",
+    bold = true,
+    fg = "#555555",
+    bg = "#11dd11",
+  },
+  -- highlight default link PounceUnmatched None
+  PounceUnmatched = {
+    link = "None",
+  },
+  -- highlight default PounceGap cterm=bold ctermfg=black ctermbg=darkgreen gui=bold fg=#555555 bg=#00aa00
+  PounceGap = {
+    ctermfg = "black",
+    ctermbg = "darkgreen",
+    bold = true,
+    fg = "#555555",
+    bg = "#00aa00",
+  },
+  -- highlight default PounceAccept cterm=bold ctermfg=black ctermbg=lightred gui=bold fg=#111111 bg=#de940b
+  PounceAccept = {
+    ctermfg = "black",
+    ctermbg = "lightred",
+    bold = true,
+    fg = "#111111",
+    bg = "#de940b",
+  },
+  -- highlight default PounceAcceptBest cterm=bold ctermfg=black ctermbg=cyan gui=bold fg=#111111 bg=#03cafc
+  PounceAcceptBest = {
+    ctermfg = "black",
+    ctermbg = "cyan",
+    bold = true,
+    fg = "#111111",
+    bg = "#03cafc",
+  },
+  -- highlight default PounceCursor cterm=bold ctermfg=black ctermbg=red gui=bold fg=#111111 bg=#ff0000
+  PounceCursor = {
+    ctermfg = "black",
+    ctermbg = "red",
+    bold = true,
+    fg = "#111111",
+    bg = "#ff0000",
+  },
+  -- highlight default PounceCursorGap cterm=bold ctermfg=black ctermbg=darkred gui=bold fg=#111111 bg=#aa0000
+  PounceCursorGap = {
+    ctermfg = "black",
+    ctermbg = "darkred",
+    bold = true,
+    fg = "#111111",
+    bg = "#aa0000",
+  },
+  -- highlight default PounceCursorAccept cterm=bold ctermfg=black ctermbg=lightred gui=bold fg=#111111 bg=#de940b
+  PounceCursorAccept = {
+    ctermfg = "black",
+    ctermbg = "lightred",
+    bold = true,
+    fg = "#111111",
+    bg = "#de940b",
+  },
+  -- highlight default PounceCursorAcceptBest cterm=bold ctermfg=black ctermbg=cyan gui=bold fg=#111111 bg=#03cafc
+  PounceCursorAcceptBest = {
+    ctermfg = "black",
+    ctermbg = "cyan",
+    bold = true,
+    fg = "#111111",
+    bg = "#03cafc",
+  },
+}
 
-local function getconfig(key, opts)
-  if opts and opts[key] ~= nil then
-    return opts[key]
-  else
-    return config[key]
-  end
-end
+local last_input = ""
 
 local function get_windows(opts)
   local wins
-  if not string.find(vim.api.nvim_get_mode().mode, "o") and getconfig("multi_window", opts) then
+  if not string.find(vim.api.nvim_get_mode().mode, "o") and opts.multi_window then
     wins = vim.api.nvim_tabpage_list_wins(0)
   else
     wins = { vim.api.nvim_get_current_win() }
@@ -62,24 +125,92 @@ local function calculate_proximity_bonus(cursor_line, cursor_col, match_line, ma
   return score
 end
 
-function M.setup(opts)
-  for k, v in pairs(opts) do
-    config[k] = v
+local init_highlights = function()
+  for hl, spec in pairs(default_hl) do
+    spec.default = true
+    vim.api.nvim_set_hl(0, hl, spec)
   end
 end
 
-function M.pounce(opts)
+M.config = function(opts)
+  config = vim.tbl_extend("force", config, opts or {})
+end
+function M.setup(opts)
+  M.config(opts)
+
+  local pounce_highlights = vim.api.nvim_create_augroup("pounce_highlights", {})
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = pounce_highlights,
+    pattern = "*",
+    callback = function()
+      init_highlights()
+    end,
+  })
+  init_highlights()
+
+  vim.api.nvim_create_user_command("Pounce", function(args)
+    opts = {}
+    if #args.args > 0 then
+      opts.input = args.args
+    end
+    M.pounce(opts)
+  end, {
+    nargs = "*",
+    preview = function(args, ns, splitbuf)
+      return M.pounce({ input = args.args, just_preview = true }, ns)
+    end,
+  })
+  vim.api.nvim_create_user_command("PounceReg", function(args)
+    opts = {}
+    if #args.args > 0 then
+      opts.input = { reg = args.args }
+    end
+    M.pounce(opts)
+  end, { nargs = "*" })
+  vim.api.nvim_create_user_command("PounceExpand", function(args)
+    opts = {}
+    if #args.args > 0 then
+      opts.input = { expand = args.args }
+    end
+    M.pounce(opts)
+  end, { nargs = "*" })
+  vim.api.nvim_create_user_command("PounceRepeat", function()
+    M.pounce { do_repeat = true }
+  end, {})
+
+  M.setup = M.config -- No longer register the commands, just update the config
+end
+
+function M.pounce(opts, ns)
+  opts = vim.tbl_extend("keep", opts or {}, config)
   local active_win = vim.api.nvim_get_current_win()
   local cursor_pos = vim.api.nvim_win_get_cursor(active_win)
   local windows = get_windows(opts)
-  local ns = vim.api.nvim_create_namespace ""
-  local input = opts and opts.do_repeat and last_input or ""
+  ns = ns or vim.api.nvim_create_namespace ""
+  local input = ""
+  if opts then
+    if opts.do_repeat then
+      input = last_input
+    elseif opts.input then
+      if type(opts.input) == "table" then
+        if opts.input.reg then
+          input = vim.fn.getreg(opts.input.reg)
+        elseif opts.input.expand then
+          input = vim.fn.expand(opts.input.expand)
+        end
+      elseif type(opts.input) == "string" then
+        input = opts.input
+      end
+    end
+  end
   local hl_prio = 65533
 
   local old_cmdheight = vim.o.cmdheight
-  if old_cmdheight == 0 then
-    vim.o.cmdheight = 1
-    vim.cmd "redraw"
+  if not opts.just_preview then
+    if old_cmdheight == 0 then
+      vim.o.cmdheight = 1
+      vim.cmd "redraw"
+    end
   end
 
   while true do
@@ -141,7 +272,7 @@ function M.pounce(opts)
             end
             score = score + #hits * 1e-9 -- stabilize sort
             table.insert(hits, { window = win, line = line, indices = m.indices, score = score })
-            if getconfig("debug", opts) then
+            if opts.debug then
               vim.api.nvim_buf_set_extmark(buf, ns, line - 1, -1, { virt_text = { { tostring(score), "IncSearch" } } })
             end
           end
@@ -176,14 +307,14 @@ function M.pounce(opts)
             })
           end
 
-          local accept_keys = getconfig("accept_keys", opts)
+          local accept_keys = opts.accept_keys
           if idx <= accept_keys:len() then
             local accept_key = accept_keys:sub(idx, idx)
             accept_key_map[accept_key] = { window = hit.window, position = { hit.line, hit.indices[1] - 1 } }
             local hl = "PounceAccept"
-            if idx == 1 and getconfig("accept_best_key", opts) then
+            if idx == 1 and opts.accept_best_key then
               hl = "PounceAcceptBest"
-              local key = vim.api.nvim_replace_termcodes(getconfig("accept_best_key", opts), true, true, true)
+              local key = vim.api.nvim_replace_termcodes(opts.accept_best_key, true, true, true)
               accept_key_map[key] = accept_key_map[accept_key]
             end
             vim.api.nvim_buf_set_extmark(
@@ -201,34 +332,40 @@ function M.pounce(opts)
     local elapsed = os.clock() - start_clock
     log.debug("Matching took " .. elapsed * 1000 .. "ms")
 
-    vim.api.nvim_echo({ { "pounce> ", "Keyword" }, { input } }, false, {})
-    vim.cmd "redraw"
+    if not opts.just_preview then
+      vim.api.nvim_echo({ { "pounce> ", "Keyword" }, { input } }, false, {})
+      vim.cmd "redraw"
 
-    local ok, nr = pcall(vim.fn.getchar)
-    if not ok then
-      break
-    end
-
-    if nr == 27 then -- escape
-      break
-    elseif nr == "\x80kb" or nr == 8 then -- backspace or <C-h>
-      input = input:sub(1, -2)
-    else
-      local ch = vim.fn.nr2char(nr)
-      local accepted = accept_key_map[ch]
-      if accepted ~= nil then
-        -- accept match
-        vim.cmd "normal! m'"
-        vim.api.nvim_win_set_cursor(accepted.window, accepted.position)
-        vim.api.nvim_set_current_win(accepted.window)
+      local ok, nr = pcall(vim.fn.getchar)
+      if not ok then
         break
-      elseif type(nr) == "number" and (nr < 32 or nr == 127) then
-        -- ignore
-      else
-        input = input .. ch
       end
+
+      if nr == 27 then -- escape
+        break
+      elseif nr == "\x80kb" or nr == 8 then -- backspace or <C-h>
+        input = input:sub(1, -2)
+      else
+        local ch = vim.fn.nr2char(nr)
+        local accepted = accept_key_map[ch]
+        if accepted ~= nil then
+          -- accept match
+          vim.cmd "normal! m'"
+          vim.api.nvim_win_set_cursor(accepted.window, accepted.position)
+          vim.api.nvim_set_current_win(accepted.window)
+          break
+        elseif type(nr) == "number" and (nr < 32 or nr == 127) then
+        -- ignore
+        else
+          input = input .. ch
+        end
+      end
+      last_input = input
+    else
+      vim.cmd "redraw!"
+      vim.notify "hi"
+      return 1
     end
-    last_input = input
   end
 
   for _, win in ipairs(windows) do
