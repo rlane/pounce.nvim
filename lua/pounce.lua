@@ -154,7 +154,12 @@ function M.setup(opts)
       opts.input = args.args
     end
     M.pounce(opts)
-  end, { nargs = "*" })
+  end, {
+    nargs = "*",
+    preview = function(args, ns, splitbuf)
+      return M.pounce({ input = args.args, just_preview = true }, ns)
+    end,
+  })
   vim.api.nvim_create_user_command("PounceReg", function(args)
     opts = {}
     if #args.args > 0 then
@@ -176,26 +181,36 @@ function M.setup(opts)
   M.setup = M.config -- No longer register the commands, just update the config
 end
 
-function M.pounce(opts)
+function M.pounce(opts, ns)
   opts = vim.tbl_extend("keep", opts or {}, config)
   local active_win = vim.api.nvim_get_current_win()
   local cursor_pos = vim.api.nvim_win_get_cursor(active_win)
   local windows = get_windows(opts)
-  local ns = vim.api.nvim_create_namespace ""
+  ns = ns or vim.api.nvim_create_namespace ""
   local input = ""
   if opts then
     if opts.do_repeat then
       input = last_input
     elseif opts.input then
-      input = opts.input
+      if type(opts.input) == "table" then
+        if opts.input.reg then
+          input = vim.fn.getreg(opts.input.reg)
+        elseif opts.input.expand then
+          input = vim.fn.expand(opts.input.expand)
+        end
+      elseif type(opts.input) == "string" then
+        input = opts.input
+      end
     end
   end
   local hl_prio = 65533
 
   local old_cmdheight = vim.o.cmdheight
-  if old_cmdheight == 0 then
-    vim.o.cmdheight = 1
-    vim.cmd "redraw"
+  if not opts.just_preview then
+    if old_cmdheight == 0 then
+      vim.o.cmdheight = 1
+      vim.cmd "redraw"
+    end
   end
 
   while true do
@@ -317,34 +332,40 @@ function M.pounce(opts)
     local elapsed = os.clock() - start_clock
     log.debug("Matching took " .. elapsed * 1000 .. "ms")
 
-    vim.api.nvim_echo({ { "pounce> ", "Keyword" }, { input } }, false, {})
-    vim.cmd "redraw"
+    if not opts.just_preview then
+      vim.api.nvim_echo({ { "pounce> ", "Keyword" }, { input } }, false, {})
+      vim.cmd "redraw"
 
-    local ok, nr = pcall(vim.fn.getchar)
-    if not ok then
-      break
-    end
-
-    if nr == 27 then -- escape
-      break
-    elseif nr == "\x80kb" or nr == 8 then -- backspace or <C-h>
-      input = input:sub(1, -2)
-    else
-      local ch = vim.fn.nr2char(nr)
-      local accepted = accept_key_map[ch]
-      if accepted ~= nil then
-        -- accept match
-        vim.cmd "normal! m'"
-        vim.api.nvim_win_set_cursor(accepted.window, accepted.position)
-        vim.api.nvim_set_current_win(accepted.window)
+      local ok, nr = pcall(vim.fn.getchar)
+      if not ok then
         break
-      elseif type(nr) == "number" and (nr < 32 or nr == 127) then
-        -- ignore
-      else
-        input = input .. ch
       end
+
+      if nr == 27 then -- escape
+        break
+      elseif nr == "\x80kb" or nr == 8 then -- backspace or <C-h>
+        input = input:sub(1, -2)
+      else
+        local ch = vim.fn.nr2char(nr)
+        local accepted = accept_key_map[ch]
+        if accepted ~= nil then
+          -- accept match
+          vim.cmd "normal! m'"
+          vim.api.nvim_win_set_cursor(accepted.window, accepted.position)
+          vim.api.nvim_set_current_win(accepted.window)
+          break
+        elseif type(nr) == "number" and (nr < 32 or nr == 127) then
+        -- ignore
+        else
+          input = input .. ch
+        end
+      end
+      last_input = input
+    else
+      vim.cmd "redraw!"
+      vim.notify "hi"
+      return 1
     end
-    last_input = input
   end
 
   for _, win in ipairs(windows) do
