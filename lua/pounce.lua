@@ -8,6 +8,10 @@ local config = {
   accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
   accept_best_key = "<enter>",
   multi_window = true,
+  highlight_overrides = {},
+  adaptive_highlights = {
+    enabled = false,
+  },
   debug = false,
 }
 
@@ -126,15 +130,23 @@ local function calculate_proximity_bonus(cursor_line, cursor_col, match_line, ma
 end
 
 local init_highlights = function()
-  for hl, spec in pairs(default_hl) do
-    spec.default = true
+  local hls = vim.tbl_extend("force", default_hl, config.highlight_overrides or {})
+
+  if config.adaptive_highlights.enabled then
+    -- define highlight specs based on current colors
+    print()
+  end
+
+  for hl, spec in pairs(hls) do
+    -- spec.default = true -- disabling default allows redefining after initial `setup` call
     vim.api.nvim_set_hl(0, hl, spec)
   end
 end
 
 M.config = function(opts)
-  config = vim.tbl_extend("force", config, opts or {})
+  config = vim.tbl_deep_extend("force", config, opts or {})
 end
+
 function M.setup(opts)
   M.config(opts)
 
@@ -178,7 +190,8 @@ function M.setup(opts)
     M.pounce { do_repeat = true }
   end, {})
 
-  M.setup = M.config -- No longer register the commands, just update the config
+  defined_commands = true
+  -- M.setup = M.config -- No longer register the commands, just update the config
 end
 
 function M.pounce(opts, ns)

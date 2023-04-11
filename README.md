@@ -85,6 +85,7 @@ require'pounce'.setup{
   accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
   accept_best_key = "<enter>",
   multi_window = true,
+  highlight_overrides = {},
   debug = false,
 }
 ```
@@ -93,6 +94,38 @@ Note that `accept_keys` allows you to configure the order in which accept keys
 display – closest proximity match gets the first letter in the `accept_keys`
 string. Users of alternative keyboard layouts may wish to amend that string.
 Colemak DHm might start with `NTESIROA...` for example.
+
+The default highlights can be overridden with the `highlight_overrides` table.
+The keys are the names of the highlights to override, keys are the highlight group options.
+See `:h nvim_set_hl()` for the highlighting options.
+For example, simple grayscale:
+
+```lua
+require('pounce').setup{
+  highlight_overrides = {
+    PounceMatch = {
+      bold = true,
+      fg = 'white',
+      bg = 'gray'
+    },
+    PounceGap = {
+      bold = true,
+      fg = 'white',
+      bg = 'darkgray'
+    },
+    PounceAccept = {
+      bold = true,
+      fg = 'black',
+      bg = 'lightgray'
+    },
+    PounceAcceptBest = {
+      bold = true,
+      fg = 'black',
+      bg = 'white'
+    }
+  }
+}
+```
 
 Below are listed some example extra commands you can use:
 
