@@ -8,6 +8,7 @@ local config = {
   accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
   accept_best_key = "<enter>",
   multi_window = true,
+  highlight_overrides = {},
   debug = false,
 }
 
@@ -83,6 +84,7 @@ local default_hl = {
 }
 
 local last_input = ""
+local done_initial_setup = false
 
 local function get_windows(opts)
   local wins
@@ -126,17 +128,25 @@ local function calculate_proximity_bonus(cursor_line, cursor_col, match_line, ma
 end
 
 local init_highlights = function()
-  for hl, spec in pairs(default_hl) do
-    spec.default = true
+  local hls = vim.tbl_extend("force", default_hl, config.highlight_overrides or {})
+
+  for hl, spec in pairs(hls) do
+    -- spec.default = true -- disabling default allows redefining after initial `setup` call
     vim.api.nvim_set_hl(0, hl, spec)
   end
 end
 
 M.config = function(opts)
-  config = vim.tbl_extend("force", config, opts or {})
+  config = vim.tbl_deep_extend("force", config, opts or {})
 end
+
 function M.setup(opts)
   M.config(opts)
+  init_highlights() -- reinitialize highlights on subsequent setup calls
+
+  if done_initial_setup then
+    return
+  end
 
   local pounce_highlights = vim.api.nvim_create_augroup("pounce_highlights", {})
   vim.api.nvim_create_autocmd("ColorScheme", {
@@ -146,7 +156,6 @@ function M.setup(opts)
       init_highlights()
     end,
   })
-  init_highlights()
 
   vim.api.nvim_create_user_command("Pounce", function(args)
     opts = {}
@@ -178,7 +187,7 @@ function M.setup(opts)
     M.pounce { do_repeat = true }
   end, {})
 
-  M.setup = M.config -- No longer register the commands, just update the config
+  done_initial_setup = true -- No longer register the commands, just update the config
 end
 
 function M.pounce(opts, ns)
