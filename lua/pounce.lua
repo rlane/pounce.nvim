@@ -7,6 +7,7 @@ local M = {}
 local config = {
   accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
   accept_best_key = "<enter>",
+  accept_on_last = false,
   multi_window = true,
   debug = false,
 }
@@ -281,6 +282,16 @@ function M.pounce(opts, ns)
 
       -- Discard relatively low-scoring matches.
       hits = matcher.filter(hits)
+
+      -- accept match if only one remaining. only if `opts.accept_on_last == true`
+      if not opts.just_preview and opts.accept_on_last and #hits == 1 then
+        local hit = hits[1]
+        local accepted = { window = hit.window, position = { hit.line, hit.indices[1] - 1 } }
+        vim.cmd "normal! m'"
+        vim.api.nvim_win_set_cursor(accepted.window, accepted.position)
+        vim.api.nvim_set_current_win(accepted.window)
+        break
+      end
 
       table.sort(hits, function(a, b)
         return a.score > b.score

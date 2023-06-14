@@ -84,6 +84,7 @@ Here are the defaults:
 require'pounce'.setup{
   accept_keys = "JFKDLSAHGNUVRBYTMICEOXWPQZ",
   accept_best_key = "<enter>",
+  accept_on_last = false, -- if true, auto jumps to the last match
   multi_window = true,
   debug = false,
 }
