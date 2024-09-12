@@ -366,7 +366,6 @@ function M.pounce(opts, ns)
       last_input = input
     else
       vim.cmd "redraw!"
-      vim.notify "hi"
       return 1
     end
   end
