@@ -9,6 +9,7 @@ local config = {
   accept_best_key = "<enter>",
   multi_window = true,
   debug = false,
+  increase_cmd_height_if_zero = true,
 }
 
 local default_hl = {
@@ -206,7 +207,7 @@ function M.pounce(opts, ns)
   local hl_prio = 65533
 
   local old_cmdheight = vim.o.cmdheight
-  if not opts.just_preview then
+  if not opts.just_preview and opts.increase_cmd_height_if_zero then
     if old_cmdheight == 0 then
       vim.o.cmdheight = 1
       vim.cmd "redraw"
